@@ -249,8 +249,8 @@ typedef struct {
 
 	// file transfer from server
 	fileHandle_t download;
-	char		downloadTempName[MAX_OSPATH];
 	char		downloadName[MAX_OSPATH];
+	char		downloadTempName[MAX_OSPATH + 4]; // downloadName + ".tmp"
 	int			sv_allowDownload;
 	char		sv_dlURL[MAX_CVAR_VALUE_STRING];
 	int downloadNumber;
@@ -417,7 +417,7 @@ typedef struct {
 	// if new stuff gets added, CL_ClearStaticDownload code needs to be updated for clear up
 	qboolean bWWWDlDisconnected; // keep going with the download after server disconnect
 	char downloadName[MAX_OSPATH];
-	char downloadTempName[MAX_OSPATH];    // in wwwdl mode, this is OS path (it's a qpath otherwise)
+	char downloadTempName[MAX_OSPATH+4];    // in wwwdl mode, this is OS path (it's a qpath otherwise)
 	char originalDownloadName[MAX_QPATH];    // if we get a redirect, keep a copy of the original file path
 	qboolean downloadRestart; // if true, we need to do another FS_Restart because we downloaded a pak
 
@@ -447,7 +447,7 @@ extern	qboolean	cl_oldGameSet;
 extern		download_t	download;
 qboolean	Com_DL_Perform( download_t *dl );
 void		Com_DL_Cleanup( download_t *dl );
-qboolean	Com_DL_Begin( download_t *dl, const char *localName, const char *remoteURL, qboolean headerCheck, qboolean autoDownload );
+qboolean	Com_DL_Begin( download_t *dl, const char *localName, const char *remoteURL, qboolean autoDownload );
 qboolean	Com_DL_InProgress( const download_t *dl );
 qboolean	Com_DL_ValidFileName( const char *fileName );
 qboolean	CL_Download( const char *cmd, const char *pakname, qboolean autoDownload );

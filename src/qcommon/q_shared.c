@@ -29,19 +29,18 @@ If you have questions concerning this license or the applicable additional terms
 // q_shared.c -- stateless support routines that are included in each code dll
 #include "q_shared.h"
 
-// os x game bundles have no standard library links, and the defines are not always defined!
-
-#ifdef MACOS_X
-int qmax( int x, int y ) {
-	return ( ( ( x ) > ( y ) ) ? ( x ) : ( y ) );
+float Com_ClampFloat( float min, float max, float value ) {
+	if ( value < min ) {
+		return min;
+	}
+	if ( value > max ) {
+		return max;
+	}
+	return value;
 }
 
-int qmin( int x, int y ) {
-	return ( ( ( x ) < ( y ) ) ? ( x ) : ( y ) );
-}
-#endif
 
-float Com_Clamp( float min, float max, float value ) {
+int Com_ClampInt( int min, int max, int value ) {
 	if ( value < min ) {
 		return min;
 	}
@@ -1006,7 +1005,7 @@ __reswitch:
 			str++;
 		}
 		if ( c != '\0' ) {
-			str++; // skip enging '"'
+			str++; // skip ending '"'
 		} else {
 			// FIXME: unterminated quoted string?
 		}
@@ -1194,7 +1193,7 @@ void Parse1DMatrix( const char **buf_p, int x, float *m ) {
 
 	for (i = 0 ; i < x ; i++) {
 		token = COM_Parse(buf_p);
-		m[i] = atof(token);
+		m[i] = Q_atof(token);
 	}
 
 	COM_MatchToken( buf_p, ")" );
@@ -2256,19 +2255,16 @@ const char *Info_ValueForKeyToken( const char *key )
 ===================
 Info_NextPair
 
-Used to itterate through all the key/value pairs in an info string
-Return qfalse if we discover the infostring is invalid
+Used to iterate through all the key/value pairs in an info string
 ===================
 */
-qboolean Info_NextPair( const char **head, char *key, char *value ) {
+const char *Info_NextPair( const char *s, char *key, char *value ) {
 	char	*o;
-	const char	*s;
-
-	s = *head;
 
 	if ( *s == '\\' ) {
 		s++;
 	}
+
 	key[0] = '\0';
 	value[0] = '\0';
 
@@ -2276,19 +2272,12 @@ qboolean Info_NextPair( const char **head, char *key, char *value ) {
 	while ( *s != '\\' ) {
 		if ( !*s ) {
 			*o = '\0';
-			*head = s;
-			return qtrue;
+			return s;
 		}
 		*o++ = *s++;
 	}
 	*o = '\0';
 	s++;
-
-	// If they key is empty at this point with a slash after it
-	// then this is considered invalid, possibly an attempt at hacked userinfo strings
-	if ( !key[0] ) {
-		return qfalse;
-	}
 
 	o = value;
 	while ( *s != '\\' && *s ) {
@@ -2296,9 +2285,7 @@ qboolean Info_NextPair( const char **head, char *key, char *value ) {
 	}
 	*o = '\0';
 
-	*head = s;
-
-	return qtrue;
+	return s;
 }
 
 

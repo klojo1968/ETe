@@ -284,7 +284,7 @@ SV_BoundMaxClients
 */
 static void SV_BoundMaxClients( int minimum ) {
 	// get the current maxclients value
-#ifdef __MACOS__
+#if defined(__APPLE__) || defined(__APPLE_CC__)
 	Cvar_Get( "sv_maxclients", "16", 0 );         //DAJ HOG
 #else
 	Cvar_Get( "sv_maxclients", "20", 0 );         // NERVE - SMF - changed to 20 from 8
@@ -924,8 +924,9 @@ void SV_Init( void )
 	sv_allowDownload = Cvar_Get( "sv_allowDownload", "1", CVAR_ARCHIVE|CVAR_SERVERINFO );
 	Cvar_Get ("sv_dlURL", "", CVAR_SERVERINFO | CVAR_ARCHIVE);
 
-	sv_master[0] = Cvar_Get( "sv_master1", MASTER_SERVER_NAME, CVAR_INIT );
-	sv_master[1] = Cvar_Get( "sv_master2", "master.etlegacy.com", CVAR_INIT );
+	// moved to Com_Init()
+	//sv_master[0] = Cvar_Get( "sv_master1", MASTER_SERVER_NAME, CVAR_INIT );
+	//sv_master[1] = Cvar_Get( "sv_master2", "master.etlegacy.com", CVAR_INIT );
 	sv_master[2] = Cvar_Get( "sv_master3", "", CVAR_ARCHIVE_ND );
 	sv_master[3] = Cvar_Get( "sv_master4", "", CVAR_ARCHIVE_ND );
 	sv_master[4] = Cvar_Get( "sv_master5", "", CVAR_ARCHIVE_ND );
@@ -971,7 +972,7 @@ void SV_Init( void )
 
 	Cvar_Get( "g_needpass", "0", CVAR_SERVERINFO );
 
-	g_gameType = Cvar_Get( "g_gametype", va( "%i", com_gameInfo.defaultGameType ), CVAR_SERVERINFO | CVAR_LATCH );
+	sv_gameType = Cvar_Get( "g_gametype", va( "%i", com_gameInfo.defaultGameType ), CVAR_SERVERINFO | CVAR_LATCH );
 
 	// the download netcode tops at 18/20 kb/s, no need to make you think you can go above
 	sv_dl_maxRate = Cvar_Get( "sv_dl_maxRate", "42000", CVAR_ARCHIVE );
@@ -1048,13 +1049,7 @@ void SV_FinalCommand( const char *cmd, qboolean disconnect ) {
 				// don't send a disconnect to a local client
 				if ( cl->netchan.remoteAddress.type != NA_LOOPBACK ) {
 					//%	SV_SendServerCommand( cl, "print \"%s\"", message );
-#ifdef __GNUC__
-#pragma GCC diagnostic ignored "-Wformat-security"
-#endif
-					SV_SendServerCommand( cl, cmd );
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
+					SV_SendServerCommand( cl, "%s", cmd );
 					// ydnar: added this so map changes can use this functionality
 					if ( disconnect ) {
 						SV_SendServerCommand( cl, "disconnect" );

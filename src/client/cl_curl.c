@@ -32,6 +32,9 @@ cvar_t *cl_cURLLib;
 
 char* (*qcurl_version)(void);
 
+char* (*qcurl_easy_escape)(CURL *curl, const char *string, int length);
+void (*qcurl_free)(char *ptr);
+
 CURL* (*qcurl_easy_init)(void);
 CURLcode (*qcurl_easy_setopt)(CURL *curl, CURLoption option, ...);
 CURLcode (*qcurl_easy_perform)(CURL *curl);
@@ -65,7 +68,7 @@ static void *cURLLib = NULL;
 GPA
 =================
 */
-static void *GPA(char *str)
+static void *GPA(const char *str)
 {
 	void *rv;
 
@@ -79,7 +82,7 @@ static void *GPA(char *str)
 	else
 	{
 		Com_DPrintf("Loaded symbol %s (0x%p)\n", str, rv);
-        return rv;
+		return rv;
 	}
 }
 #endif /* USE_CURL_DLOPEN */
@@ -126,6 +129,8 @@ qboolean CL_cURL_Init( void )
 	clc.cURLEnabled = qtrue;
 
 	qcurl_version = GPA("curl_version");
+	qcurl_easy_escape = GPA("curl_easy_escape");
+	qcurl_free = GPA("curl_free");
 
 	qcurl_easy_init = GPA("curl_easy_init");
 	qcurl_easy_setopt = GPA("curl_easy_setopt");
@@ -174,6 +179,10 @@ void CL_cURL_Shutdown( void )
 		Sys_UnloadLibrary(cURLLib);
 		cURLLib = NULL;
 	}
+	qcurl_version = NULL;
+	qcurl_easy_escape = NULL;
+	qcurl_free = NULL;
+
 	qcurl_easy_init = NULL;
 	qcurl_easy_setopt = NULL;
 	qcurl_easy_perform = NULL;
@@ -318,6 +327,31 @@ void CL_cURL_BeginDownload( const char *localName, const char *remoteURL )
 		return;
 	}
 
+	/*{
+		char *escapedName = qcurl_easy_escape( clc.downloadCURL, clc.downloadURL, 0 );
+		if ( !escapedName ) 
+		{
+			Com_Printf( S_COLOR_RED "CL_cURL_BeginDownload: easy_escape() failed\n" );
+			CL_cURL_Cleanup( );
+			return;
+		}
+
+		Q_strncpyz( dl->URL, remoteURL, sizeof( dl->URL ) );
+
+		if ( !Q_replace( "%1", escapedName, dl->URL, sizeof( dl->URL ) ) )
+		{
+			if ( dl->URL[strlen(dl->URL)] != '/' )
+				Q_strcat( dl->URL, sizeof( dl->URL ), "/" );
+			Q_strcat( dl->URL, sizeof( dl->URL ), escapedName );
+			dl->headerCheck = qfalse;
+		}
+		else
+		{
+			dl->headerCheck = qtrue;
+		}
+		qcurl_free( escapedName );
+	}*/
+
 	if ( com_developer->integer )
 		qcurl_easy_setopt( clc.downloadCURL, CURLOPT_VERBOSE, 1 );
 	qcurl_easy_setopt(clc.downloadCURL, CURLOPT_URL, clc.downloadURL);
@@ -404,7 +438,7 @@ void CL_cURL_PerformDownload( void )
 }
 
 
-/*  
+/*
 ==================================
 
 Common CURL downloading functions
@@ -420,12 +454,12 @@ stristr
 case-insensitive sub-string search
 ==================================
 */
-const char* stristr( const char *source, const char *target ) 
+const char* stristr( const char *source, const char *target )
 {
 	const char *p0, *p1, *p2, *pn;
 	char c1, c2;
 
-	if ( *target == '\0' )  
+	if ( *target == '\0' )
 	{
 		return source;
 	}
@@ -433,19 +467,19 @@ const char* stristr( const char *source, const char *target )
 	pn = source;
 	p1 = source;
 	p2 = target;
-	
+
 	while ( *++p2 )
 	{
-	    pn++;
+		pn++;
 	}
 
 	while ( *pn != '\0' ) 
 	{
 
-    	p0 = p1;
-	    p2 = target;
+		p0 = p1;
+		p2 = target;
 
-    	while ( (c1 = *p1) != '\0' && (c2 = *p2) != '\0' )
+		while ( (c1 = *p1) != '\0' && (c2 = *p2) != '\0' )
 		{
 				if ( c1 <= 'Z' && c1 >= 'A' )
 					c1 += ('a' - 'A');
@@ -453,7 +487,7 @@ const char* stristr( const char *source, const char *target )
 				if ( c2 <= 'Z' && c2 >= 'A' )
 					c2 += ('a' - 'A');
 
-				if ( c1 != c2 ) 
+				if ( c1 != c2 )
 				{
 					break;
 				}
@@ -462,24 +496,25 @@ const char* stristr( const char *source, const char *target )
 				p2++;
 		}
 
-		if ( *p2 == '\0' )  
+		if ( *p2 == '\0' )
 		{
 			return p0;
 		}
 
 		p1 = p0 + 1;
-	    pn++;
-  }
+		pn++;
+	}
 
-  return NULL;
+	return NULL;
 }
+
 
 /*
 ==================================
 replace1
 ==================================
 */
-int replace1( const char src, const char dst, char *str ) 
+int replace1( const char src, const char dst, char *str )
 {
 	int count;
 
@@ -488,9 +523,9 @@ int replace1( const char src, const char dst, char *str )
 
 	count = 0;
 
-	while ( *str != '\0' ) 
+	while ( *str != '\0' )
 	{
-		if ( *str == src )	
+		if ( *str == src )
 		{
 			*str = dst;
 			count++;
@@ -554,6 +589,8 @@ qboolean Com_DL_Init( download_t *dl )
 	Sys_LoadFunctionErrors(); // reset error count;
 
 	dl->func.version = Sys_LoadFunction( dl->func.lib, "curl_version" );
+	dl->func.easy_escape = Sys_LoadFunction( dl->func.lib, "curl_easy_escape" );
+	dl->func.free = Sys_LoadFunction( dl->func.lib, "curl_free" );
 
 	dl->func.easy_init = Sys_LoadFunction( dl->func.lib, "curl_easy_init" );
 	dl->func.easy_setopt = Sys_LoadFunction( dl->func.lib, "curl_easy_setopt" );
@@ -585,6 +622,8 @@ qboolean Com_DL_Init( download_t *dl )
 	dl->func.lib = NULL;
 
 	dl->func.version = curl_version;
+	dl->func.easy_escape = curl_easy_escape;
+	dl->func.free = (void (*)(char *))curl_free; // cast to silence warning
 
 	dl->func.easy_init = curl_easy_init;
 	dl->func.easy_setopt = curl_easy_setopt;
@@ -627,9 +666,9 @@ Com_DL_Cleanup
 */
 void Com_DL_Cleanup( download_t *dl )
 {
-	if( dl->cURLM ) 
+	if( dl->cURLM )
 	{
-		if ( dl->cURL ) 
+		if ( dl->cURL )
 		{
 			dl->func.multi_remove_handle( dl->cURLM, dl->cURL );
 			dl->func.easy_cleanup( dl->cURL );
@@ -638,12 +677,12 @@ void Com_DL_Cleanup( download_t *dl )
 		dl->cURLM = NULL;
 		dl->cURL = NULL;
 	}
-	else if( dl->cURL ) 
+	else if( dl->cURL )
 	{
 		dl->func.easy_cleanup( dl->cURL );
 		dl->cURL = NULL;
 	}
-	if ( dl->fHandle != FS_INVALID_HANDLE ) 
+	if ( dl->fHandle != FS_INVALID_HANDLE )
 	{
 		FS_FCloseFile( dl->fHandle );
 		dl->fHandle = FS_INVALID_HANDLE;
@@ -698,7 +737,7 @@ static int Com_DL_CallbackProgress( void *data, double dltotal, double dlnow, do
 {
 	double percentage, speed;
 	download_t *dl = (download_t *)data;
-	
+
 	dl->Size = (int)dltotal;
 	dl->Count = (int)dlnow;
 
@@ -743,7 +782,7 @@ static size_t Com_DL_CallbackWrite( void *ptr, size_t size, size_t nmemb, void *
 	{
 		if ( !CL_ValidPakSignature( ptr, size*nmemb ) ) 
 		{
-			Com_Printf( S_COLOR_YELLOW "Com_DL_CallbackWrite(): invalid pak signature for %s.\n", 
+			Com_Printf( S_COLOR_YELLOW "Com_DL_CallbackWrite(): invalid pak signature for %s.\n",
 				dl->Name );
 			return (size_t)-1;
 		}
@@ -785,14 +824,14 @@ qboolean Com_DL_ValidFileName( const char *fileName )
 Com_DL_HeaderCallback
 =================
 */
-static size_t Com_DL_HeaderCallback( void *ptr, size_t size, size_t nmemb, void *userdata ) 
+static size_t Com_DL_HeaderCallback( void *ptr, size_t size, size_t nmemb, void *userdata )
 {
 	char name[MAX_OSPATH];
 	char header[1024], *s, quote, *d;
 	download_t *dl;
 	int len;
 
-	if ( size*nmemb >= sizeof( header ) ) 
+	if ( size*nmemb >= sizeof( header ) )
 	{
 		Com_Printf( S_COLOR_RED "Com_DL_HeaderCallback: header is too large." );
 		return (size_t)-1;
@@ -808,7 +847,7 @@ static size_t Com_DL_HeaderCallback( void *ptr, size_t size, size_t nmemb, void 
 	s = (char*)stristr( header, "content-disposition:" );
 	if ( s ) 
 	{
-		s += 20; // strlen( "content-disposition:" )	
+		s += 20; // strlen( "content-disposition:" )
 		s = (char*)stristr( s, "filename=" );
 		if ( s ) 
 		{
@@ -819,7 +858,7 @@ static size_t Com_DL_HeaderCallback( void *ptr, size_t size, size_t nmemb, void 
 			replace1( '\n', '\0', s );
 
 			// prevent overflow
-			if ( strlen( s ) >= sizeof( name ) ) 
+			if ( strlen( s ) >= sizeof( name ) )
 				s[ sizeof( name ) - 1 ] = '\0';
 
 			if ( *s == '\'' || *s == '"' )
@@ -847,7 +886,7 @@ static size_t Com_DL_HeaderCallback( void *ptr, size_t size, size_t nmemb, void 
 			strcpy( dl->Name, name );
 		}
 	}
-	
+
 	return size*nmemb;
 }
 
@@ -859,7 +898,7 @@ Com_DL_Begin()
 Start downloading file from remoteURL and save it under fs_game/localName
 ==============================================================
 */
-qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remoteURL, qboolean headerCheck, qboolean autoDownload )
+qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remoteURL, qboolean autoDownload )
 {
 	char *s;
 
@@ -869,13 +908,11 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 		return qfalse;
 	}
 
-	Com_Printf( "URL: %s\n", remoteURL );
-
 	Com_DL_Cleanup( dl );
 
 	if ( !Com_DL_Init( dl ) ) 
 	{
-		Com_Printf( S_COLOR_YELLOW "Error initializing cURL library\n" );		
+		Com_Printf( S_COLOR_YELLOW "Error initializing cURL library\n" );
 		return qfalse;
 	}
 
@@ -887,7 +924,32 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 		return qfalse;
 	}
 
-	Q_strncpyz( dl->URL, remoteURL, sizeof( dl->URL ) );
+	{
+		char *escapedName = dl->func.easy_escape( dl->cURL, localName, 0 );
+		if ( !escapedName ) 
+		{
+			Com_Printf( S_COLOR_RED "Com_DL_Begin: easy_escape() failed\n" );
+			Com_DL_Cleanup( dl );
+			return qfalse;
+		}
+
+		Q_strncpyz( dl->URL, remoteURL, sizeof( dl->URL ) );
+
+		if ( !Q_replace( "%1", escapedName, dl->URL, sizeof( dl->URL ) ) )
+		{
+			if ( dl->URL[strlen(dl->URL)] != '/' )
+				Q_strcat( dl->URL, sizeof( dl->URL ), "/" );
+			Q_strcat( dl->URL, sizeof( dl->URL ), escapedName );
+			dl->headerCheck = qfalse;
+		}
+		else
+		{
+			dl->headerCheck = qtrue;
+		}
+		dl->func.free( escapedName );
+	}
+
+	Com_Printf( "URL: %s\n", dl->URL );
 
 	if ( cl_dlDirectory->integer ) {
 		Q_strncpyz( dl->gameDir, FS_GetBaseGameDir(), sizeof( dl->gameDir ) );
@@ -910,10 +972,8 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 		return qfalse;
 	}
 
-	dl->headerCheck = headerCheck;
-
 	Com_sprintf( dl->TempName, sizeof( dl->TempName ), 
-		"%s/%s.%08x.tmp", dl->gameDir, dl->Name, rand() | (rand() << 16) );
+		"%s%c%s.%08x.tmp", dl->gameDir, PATH_SEP, dl->Name, rand() | (rand() << 16) );
 
 	if ( com_developer->integer )
 		dl->func.easy_setopt( dl->cURL, CURLOPT_VERBOSE, 1 );
@@ -925,7 +985,7 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 	dl->func.easy_setopt( dl->cURL, CURLOPT_USERAGENT, Q3_VERSION );
 	dl->func.easy_setopt( dl->cURL, CURLOPT_WRITEFUNCTION, Com_DL_CallbackWrite );
 	dl->func.easy_setopt( dl->cURL, CURLOPT_WRITEDATA, dl );
-	if ( headerCheck ) 
+	if ( dl->headerCheck ) 
 	{
 		dl->func.easy_setopt( dl->cURL, CURLOPT_HEADERFUNCTION, Com_DL_HeaderCallback );
 		dl->func.easy_setopt( dl->cURL, CURLOPT_HEADERDATA, dl );
@@ -940,9 +1000,9 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 
 	dl->cURLM = dl->func.multi_init();
 
-	if ( !dl->cURLM ) 
+	if ( !dl->cURLM )
 	{
-		Com_DL_Cleanup( dl );	
+		Com_DL_Cleanup( dl );
 		Com_Printf( S_COLOR_RED "Com_DL_Begin: multi_init() failed\n" );
 		return qfalse;
 	}
@@ -970,7 +1030,7 @@ qboolean Com_DL_Begin( download_t *dl, const char *localName, const char *remote
 
 qboolean Com_DL_Perform( download_t *dl )
 {
-	char name[MAX_OSPATH];
+	char name[ sizeof( dl->TempName ) ];
 	CURLMcode res;
 	CURLMsg *msg;
 	long code;
@@ -1056,7 +1116,7 @@ qboolean Com_DL_Perform( download_t *dl )
 		{
 			if ( cls.state == CA_CONNECTED )
 			{
-				Com_Error( ERR_DROP, "download error" );
+				Com_Error( ERR_DROP, "%s", "download error" );
 			}
 		}
 	}
@@ -1076,6 +1136,9 @@ static FILE *dl_file = NULL;
 #ifdef USE_CURL_DLOPEN
 
 char* (*dl_curl_version)(void);
+
+char* (*dl_curl_easy_escape)(CURL *curl, const char *string, int length);
+void (*dl_curl_free)(char *ptr);
 
 CURL* (*dl_curl_easy_init)(void);
 CURLcode (*dl_curl_easy_setopt)(CURL *curl, CURLoption option, ...);
@@ -1110,7 +1173,7 @@ static void *dl_cURLLib = NULL;
 GPA
 =================
 */
-static void *DLGPA(char *str)
+static void *DLGPA(const char *str)
 {
 	void *rv;
 
@@ -1282,7 +1345,13 @@ static int DL_cb_Progress( void *clientp, double dltotal, double dlnow, double u
 	/* cl_downloadSize and cl_downloadTime are set by the Q3 protocol...
 	   and it would probably be expensive to verify them here.   -zinx */
 
-	Cvar_SetValue( "cl_downloadCount", (float)dlnow );
+	clc.downloadSize = (int)dltotal;
+	Cvar_SetIntegerValue( "cl_downloadSize", clc.downloadSize );
+	clc.downloadCount = (int)dlnow;
+	Cvar_SetIntegerValue( "cl_downloadCount", clc.downloadCount );
+
+
+	//Cvar_SetValue( "cl_downloadCount", (float)dlnow );
 	return 0;
 }
 
@@ -1384,11 +1453,11 @@ dlStatus_t DL_DownloadLoop( void ) {
 
 	if ( msg->data.result != CURLE_OK ) {
 		code = dl_curl_easy_getinfo( msg->easy_handle, CURLINFO_RESPONSE_CODE, &code );
-#ifdef __MACOS__ // ���
-		err = "unknown curl error.";
-#else
+//#ifdef __MACOS__ // ���
+//		err = "unknown curl error.";
+//#else
 		err = dl_curl_easy_strerror( msg->data.result );
-#endif
+//#endif
 	} else {
 		err = NULL;
 	}

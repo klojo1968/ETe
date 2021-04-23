@@ -437,7 +437,7 @@ const char *Sys_DefaultHomePath( void )
 	{
 		Q_strncpyz( homePath, p, sizeof( homePath ) );
 #ifdef MACOS_X
-		Q_strcat( homePath, sizeof(homePath), "/Library/Application Support/EnemyTerritory" );
+		Q_strcat( homePath, sizeof(homePath), "/Library/Application Support/Wolfenstein ET" );
 #else
 		Q_strcat( homePath, sizeof( homePath ), "/.etwolf" );
 #endif

@@ -154,7 +154,6 @@ G_MissileImpact
 void G_MissileImpact( gentity_t *ent, trace_t *trace, int impactDamage ) {
 	gentity_t       *other;
 	gentity_t*      temp;
-	qboolean hitClient = qfalse;
 	vec3_t velocity;
 	int event = 0, param = 0, otherentnum = 0;
 
@@ -207,9 +206,6 @@ void G_MissileImpact( gentity_t *ent, trace_t *trace, int impactDamage ) {
 	// impact damage
 	if ( other->takedamage || other->dmgparent ) {
 		if ( ent->damage ) {
-			if ( AccuracyHit( other, &g_entities[ent->r.ownerNum] ) ) {
-				hitClient = qtrue;
-			}
 			BG_EvaluateTrajectoryDelta( &ent->s.pos, level.time, velocity, qfalse, ent->s.effect2Time );
 			if ( !VectorLengthSquared( velocity ) ) {
 				velocity[2] = 1;    // stepped on a grenade
@@ -336,9 +332,7 @@ Explode a missile without an impact
 void G_ExplodeMissile( gentity_t *ent ) {
 	vec3_t dir;
 	vec3_t origin;
-	qboolean small = qfalse;
 	int etype;
-
 
 	if ( ent->s.weapon == WP_SMOKE_MARKER && ent->active ) {
 		if ( ent->s.teamNum == TEAM_AXIS ) {
@@ -353,7 +347,7 @@ void G_ExplodeMissile( gentity_t *ent ) {
 
 	// splash damage
 	if ( ent->splashDamage ) {
-		vec3_t origin;
+		//vec3_t origin;
 		trace_t tr;
 
 		VectorCopy( ent->r.currentOrigin, origin );
@@ -386,10 +380,8 @@ void G_ExplodeMissile( gentity_t *ent ) {
 
 	if ( ent->accuracy == 1 ) {
 		G_AddEvent( ent, EV_MISSILE_MISS_SMALL, DirToByte( dir ) );
-		small = qfalse;
 	} else if ( ent->accuracy == 2 ) {
 		G_AddEvent( ent, EV_MISSILE_MISS_LARGE, DirToByte( dir ) );
-		small = qfalse;
 	} else if ( ent->accuracy == 3 ) {
 		ent->freeAfterEvent = qtrue;
 		trap_LinkEntity( ent );
@@ -1942,9 +1934,6 @@ gentity_t *fire_grenade( gentity_t *self, vec3_t start, vec3_t dir, int grenadeW
 	SnapVector( bolt->s.pos.trDelta );          // save net bandwidth
 
 	VectorCopy( start, bolt->r.currentOrigin );
-
-	// RF, record the time for AI
-	bolt->awaitingHelpTime = level.time;
 
 	return bolt;
 }

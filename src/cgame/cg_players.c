@@ -130,7 +130,7 @@ static void CG_LoadClientInfo( int clientNum ) {
 
 void CG_ParseTeamXPs( int n ) {
 	int i, j;
-	char* cs = (char*)CG_ConfigString( CS_AXIS_MAPS_XP + n );
+	const char* cs = CG_ConfigString( CS_AXIS_MAPS_XP + n );
 	const char* token;
 
 	for ( i = 0; i < MAX_MAPS_PER_CAMPAIGN; i++ ) {
@@ -535,7 +535,7 @@ may include ANIM_TOGGLEBIT
 */
 void CG_SetLerpFrameAnimationRate( centity_t *cent, clientInfo_t *ci, lerpFrame_t *lf, int newAnimation ) {
 	animation_t     *anim, *oldanim;
-	int transitionMin = -1, oldAnimTime, oldAnimNum;
+	int transitionMin = -1, /*oldAnimTime,*/ oldAnimNum;
 	qboolean firstAnim = qfalse;
 
 	bg_character_t *character = CG_CharacterForClientinfo( ci, cent );
@@ -544,7 +544,7 @@ void CG_SetLerpFrameAnimationRate( centity_t *cent, clientInfo_t *ci, lerpFrame_
 		return;
 	}
 
-	oldAnimTime = lf->animationTime;
+	//oldAnimTime = lf->animationTime;
 	oldanim     = lf->animation;
 	oldAnimNum  = lf->animationNumber;
 
@@ -1047,7 +1047,7 @@ static void CG_PlayerAngles( centity_t *cent, vec3_t legs[3], vec3_t torso[3], v
 	vec3_t velocity;
 	float speed;
 	float clampTolerance;
-	int legsSet, torsoSet;
+	int legsSet;//, torsoSet;
 	clientInfo_t    *ci;
 	bg_character_t  *character;
 
@@ -1060,7 +1060,7 @@ static void CG_PlayerAngles( centity_t *cent, vec3_t legs[3], vec3_t torso[3], v
 	}
 
 	legsSet = cent->currentState.legsAnim & ~ANIM_TOGGLEBIT;
-	torsoSet = cent->currentState.torsoAnim & ~ANIM_TOGGLEBIT;
+	//torsoSet = cent->currentState.torsoAnim & ~ANIM_TOGGLEBIT;
 
 	VectorCopy( cent->lerpAngles, headAngles );
 	headAngles[YAW] = AngleMod( headAngles[YAW] );
@@ -1372,8 +1372,8 @@ static void CG_PlayerSprites( centity_t *cent ) {
 	}
 
 	{
-		fireteamData_t* ft;
-		if ( ( ft = CG_IsOnFireteam( cent->currentState.number ) ) ) {
+		fireteamData_t* ft = CG_IsOnFireteam( cent->currentState.number );
+		if ( ft ) {
 			if ( ft == CG_IsOnFireteam( cg.clientNum ) && cgs.clientinfo[ cent->currentState.number ].selected ) {
 				CG_PlayerFloatSprite( cent, cgs.media.fireteamicons[ft->ident], 56 );
 			}
@@ -1783,8 +1783,8 @@ void CG_Player( centity_t *cent ) {
 	refEntity_t body;
 	refEntity_t head;
 	refEntity_t acc;
-	vec3_t playerOrigin;
-	vec3_t lightorigin;
+	vec3_t playerOrigin = { 0 };
+	vec3_t lightorigin = { 0 };
 	int clientNum,i;
 	int renderfx;
 	qboolean shadow;
@@ -2080,7 +2080,8 @@ void CG_Player( centity_t *cent ) {
 	// add the head
 	//
 
-	if ( !( head.hModel = character->hudhead ) ) {
+	head.hModel = character->hudhead;
+	if ( head.hModel == 0 ) {
 		return;
 	}
 	head.customSkin = character->hudheadskin;

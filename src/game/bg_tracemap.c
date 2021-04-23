@@ -73,7 +73,7 @@ void CG_GenerateTracemap( void ) {
 	static int tracecount = 0;
 	int ms;
 
-	if ( !developer.integer ) {
+	if ( !cg_developer.integer ) {
 		CG_Printf( "Can only generate a tracemap in developer mode.\n" );
 		return;
 	}

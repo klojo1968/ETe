@@ -152,7 +152,7 @@ static void DrawTris( shaderCommands_t *input ) {
 		for ( i = 0 ; i < 4 ; i++ ) {
 			token = COM_Parse( &s );
 			if ( token ) {
-				trisColor[i] = atof( token );
+				trisColor[i] = Q_atof( token );
 			} else {
 				trisColor[i] = 1.f;
 			}
@@ -1057,7 +1057,7 @@ void R_ComputeTexCoords( const int b, const textureBundle_t *bundle ) {
 			RB_CalcScaleTexCoords( bundle->texMods[tm].scale, (float *) src, (float *) dst );
 			src = dst;
 			break;
-			
+
 		case TMOD_STRETCH:
 			RB_CalcStretchTexCoords( &bundle->texMods[tm].wave, (float *)src, (float *) dst );
 			src = dst;
@@ -1365,7 +1365,7 @@ void RB_StageIteratorGeneric( void )
 	//
 	RB_IterateStagesGeneric( input );
 
-	// 
+	//
 	// now do any dynamic lighting needed
 	//
 	//%	tess.dlightBits = 255;	// HACK!
@@ -1392,7 +1392,7 @@ void RB_StageIteratorGeneric( void )
 		RB_FogPass();
 	}
 
-	// 
+	//
 	// unlock arrays
 	//
 	if ( qglUnlockArraysEXT )
@@ -1427,7 +1427,7 @@ void RB_EndSurface( void ) {
 
 	if ( input->numIndexes > SHADER_MAX_INDEXES ) {
 		ri.Error( ERR_DROP, "RB_EndSurface() - SHADER_MAX_INDEXES hit" );
-	}	
+	}
 
 	if ( input->numVertexes > SHADER_MAX_VERTEXES ) {
 		ri.Error( ERR_DROP, "RB_EndSurface() - SHADER_MAX_VERTEXES hit" );
@@ -1452,7 +1452,7 @@ void RB_EndSurface( void ) {
 		backEnd.pc.c_lit_batches++;
 		backEnd.pc.c_lit_vertices += tess.numVertexes;
 		backEnd.pc.c_lit_indices += tess.numIndexes;
-	} else 
+	} else
 #endif
 	{
 		backEnd.pc.c_shaders++;

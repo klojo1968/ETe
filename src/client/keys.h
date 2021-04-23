@@ -43,12 +43,14 @@ extern  int         anykeydown;
 
 void Key_WriteBindings( fileHandle_t f );
 void Key_SetBinding( int keynum, const char *binding );
+void Key_GetBindingBuf( int keynum, char *buf, int buflen );
 void Key_GetBindingByString( const char* binding, int* key1, int* key2 );
 const char *Key_GetBinding( int keynum );
 void Key_ParseBinding( int key, qboolean down, unsigned time, qboolean forceAll );
 
 int Key_GetKey( const char *binding );
 const char *Key_KeynumToString( int keynum, qboolean bTranslate );
+void Key_KeynumToStringBuf( int keynum, char *buf, int buflen );
 int Key_StringToKeynum( const char *str );
 
 qboolean Key_IsDown( int keynum );

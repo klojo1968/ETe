@@ -546,9 +546,9 @@ void heal_touch( gentity_t *self, gentity_t *other, trace_t *trace ) {
 	}
 
 	for ( i = 0; i < clientcount; i++ ) {
-		healvalue = min( touchClients[i]->client->ps.stats[STAT_MAX_HEALTH] - touchClients[i]->health, self->damage );
+		healvalue = MIN( touchClients[i]->client->ps.stats[STAT_MAX_HEALTH] - touchClients[i]->health, self->damage );
 		if ( self->health != -9999 ) {
-			healvalue = min( healvalue, self->health );
+			healvalue = MIN( healvalue, self->health );
 		}
 		if ( healvalue <= 0 ) {
 			continue;
@@ -734,7 +734,7 @@ void ammo_touch( gentity_t *self, gentity_t *other, trace_t *trace ) {
 	if ( self->health == -9999 ) {
 		count = clientcount;
 	} else {
-		count = min( clientcount, self->health / (float)self->damage );
+		count = MIN( clientcount, self->health / (float)self->damage );
 	}
 
 	for ( i = 0; i < count; i++ ) {
@@ -1469,7 +1469,7 @@ void SP_trigger_objective_info( gentity_t *ent ) {
 		}
 	}
 
-	G_SetConfigStringValue( CS_OID_DATA + level.numOidTriggers, "e", va( "%i", ent - g_entities )           );
+	G_SetConfigStringValue( CS_OID_DATA + level.numOidTriggers, "e", va( "%i", (int)(ent - g_entities) )           );
 	G_SetConfigStringValue( CS_OID_DATA + level.numOidTriggers, "o", va( "%i", objflags )             );
 	G_SetConfigStringValue( CS_OID_DATA + level.numOidTriggers, "cix",   va( "%i", cix )                      );
 	G_SetConfigStringValue( CS_OID_DATA + level.numOidTriggers, "cia",   va( "%i", cia )                      );
@@ -1524,7 +1524,7 @@ void SP_trigger_objective_info( gentity_t *ent ) {
 // JPW NERVE -- field which is acted upon (cgame side) by screenshakes to drop dust particles
 void trigger_concussive_touch( gentity_t *ent, gentity_t *other, trace_t *trace ) {
 	return; // FIXME this should be NULLed out in SP_trigger_concussive_dust after everything works
-	G_Printf( "hit concussive ent %d mins=%f,%f,%f maxs=%f,%f,%f\n",ent - g_entities,
+	G_Printf( "hit concussive ent %d mins=%f,%f,%f maxs=%f,%f,%f\n",(int)(ent - g_entities),
 			  ent->r.mins[0],
 			  ent->r.mins[1],
 			  ent->r.mins[2],

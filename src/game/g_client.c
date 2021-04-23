@@ -38,6 +38,8 @@ vec3_t playerMins = {-18, -18, -24};
 vec3_t playerMaxs = {18, 18, 48};
 // done.
 
+static char	ban_reason[MAX_CVAR_VALUE_STRING];
+
 /*QUAKED info_player_deathmatch (1 0 1) (-18 -18 -24) (18 18 48)
 potential spawning position for deathmatch games.
 Targets will be fired when someone spawns in on them.
@@ -93,8 +95,6 @@ The intermission will be viewed from this point.  Target an info_notnull for the
 void SP_info_player_intermission( gentity_t *ent ) {
 
 }
-
-extern void BotSpeedBonus( int clientNum );
 
 
 /*
@@ -593,8 +593,7 @@ reinforce
 // -- called when time expires for a team deployment cycle and there is at least one guy ready to go
 */
 void reinforce( gentity_t *ent ) {
-	int p, team; // numDeployable=0, finished=0; // TTimo unused
-	char *classname;
+	int p;
 	gclient_t *rclient;
 	char userinfo[MAX_INFO_STRING], *respawnStr;
 
@@ -614,18 +613,6 @@ void reinforce( gentity_t *ent ) {
 	if ( ent->client->pers.mvCount > 0 ) {
 		G_smvRemoveInvalidClients( ent, TEAM_AXIS );
 		G_smvRemoveInvalidClients( ent, TEAM_ALLIES );
-	}
-
-	// get team to deploy from passed entity
-	team = ent->client->sess.sessionTeam;
-
-	// find number active team spawnpoints
-	if ( team == TEAM_AXIS ) {
-		classname = "team_CTF_redspawn";
-	} else if ( team == TEAM_ALLIES ) {
-		classname = "team_CTF_bluespawn";
-	} else {
-		assert( 0 );
 	}
 
 	// DHM - Nerve :: restore persistant data now that we're out of Limbo
@@ -823,8 +810,6 @@ qboolean AddWeaponToPlayer( gclient_t *client, weapon_t weapon, int ammo, int am
 	return qtrue;
 }
 
-void BotSetPOW( int entityNum, qboolean isPOW );
-
 /*
 ===========
 SetWolfSpawnWeapons
@@ -832,8 +817,6 @@ SetWolfSpawnWeapons
 */
 void SetWolfSpawnWeapons( gclient_t *client ) {
 	int pc = client->sess.playerType;
-	qboolean isBot = ( g_entities[client->ps.clientNum].r.svFlags & SVF_BOT ) ? qtrue : qfalse;
-	qboolean isPOW = ( g_entities[client->ps.clientNum].r.svFlags & SVF_POW ) ? qtrue : qfalse;
 
 	if ( client->sess.sessionTeam == TEAM_SPECTATOR ) {
 		return;
@@ -854,16 +837,6 @@ void SetWolfSpawnWeapons( gclient_t *client ) {
 	// All players start with a knife (not OR-ing so that it clears previous weapons)
 	client->ps.weapons[0] = 0;
 	client->ps.weapons[1] = 0;
-
-	// Gordon: set up pow status
-	if ( isBot ) {
-		if ( isPOW ) {
-			BotSetPOW( client->ps.clientNum, qtrue );
-			return;
-		} else {
-			BotSetPOW( client->ps.clientNum, qfalse );
-		}
-	}
 
 	AddWeaponToPlayer( client, WP_KNIFE, 1, 0, qtrue );
 
@@ -1204,6 +1177,7 @@ void AddMedicTeamBonus( gclient_t *client ) {
 ClientCheckName
 ============
 */
+#if 0
 static void ClientCleanName( const char *in, char *out, int outSize ) {
 	int len, colorlessLen;
 	char ch;
@@ -1279,6 +1253,7 @@ static void ClientCleanName( const char *in, char *out, int outSize ) {
 		Q_strncpyz( p, "UnnamedPlayer", outSize );
 	}
 }
+#endif
 
 void G_StartPlayerAppropriateSound( gentity_t *ent, char *soundType ) {
 }
@@ -1294,10 +1269,10 @@ The game can override any of the settings and call trap_SetUserinfo
 if desired.
 ============
 */
-void ClientUserinfoChanged( int clientNum ) {
+qboolean ClientUserinfoChanged( int clientNum ) {
 	gentity_t *ent;
-	char    *s;
-	char oldname[MAX_STRING_CHARS];
+	const char    *s;
+	char oldname[MAX_NETNAME];
 	char userinfo[MAX_INFO_STRING];
 	gclient_t   *client;
 	int i;
@@ -1305,11 +1280,10 @@ void ClientUserinfoChanged( int clientNum ) {
 	char medalStr[16] = "";
 	int characterIndex;
 
-
 	ent = g_entities + clientNum;
 	client = ent->client;
 
-	client->ps.clientNum = clientNum;
+	//client->ps.clientNum = clientNum;
 
 	client->medals = 0;
 	for ( i = 0; i < SK_NUM_SKILLS; i++ ) {
@@ -1320,11 +1294,21 @@ void ClientUserinfoChanged( int clientNum ) {
 
 	// check for malformed or illegal info strings
 	if ( !Info_Validate( userinfo ) ) {
-		Q_strncpyz( userinfo, "\\name\\badinfo", sizeof( userinfo ) );
+		G_Printf("Client %i Userinfo: %s\n", clientNum, userinfo );
+		Q_strncpyz( ban_reason, "bad userinfo", sizeof(ban_reason) );
+		if ( client && client->pers.connected != CON_DISCONNECTED )
+			trap_DropClient( clientNum, ban_reason, 0 );
+		return qfalse;
+	}
+
+	if ( client->pers.connected == CON_DISCONNECTED ) {
+		// we just checked if connecting player can join server
+		// so quit now as some important data like player team is still not set
+		return qtrue;
 	}
 
 #ifndef DEBUG_STATS
-	if ( g_developer.integer || *g_log.string || g_dedicated.integer )
+	if ( g_developer.integer || *g_logFile.string || g_dedicated.integer )
 #endif
 	{
 		G_Printf( "Userinfo: %s\n", userinfo );
@@ -1367,7 +1351,7 @@ void ClientUserinfoChanged( int clientNum ) {
 	// set name
 	Q_strncpyz( oldname, client->pers.netname, sizeof( oldname ) );
 	s = Info_ValueForKey( userinfo, "name" );
-	ClientCleanName( s, client->pers.netname, sizeof( client->pers.netname ) );
+	BG_CleanName( s, client->pers.netname, sizeof( client->pers.netname ), "ETPlayer" );
 
 	if ( client->pers.connected == CON_CONNECTED ) {
 		if ( strcmp( oldname, client->pers.netname ) ) {
@@ -1451,11 +1435,13 @@ void ClientUserinfoChanged( int clientNum ) {
 	trap_SetConfigstring( CS_PLAYERS + clientNum, s );
 
 	if ( !Q_stricmp( oldname, s ) ) {
-		return;
+		return qtrue;
 	}
 
 	G_LogPrintf( "ClientUserinfoChanged: %i %s\n", clientNum, s );
 	G_DPrintf( "ClientUserinfoChanged: %i :: %s\n", clientNum, s );
+
+	return qtrue;
 }
 
 
@@ -1479,17 +1465,33 @@ to the server machine, but qfalse on map changes and tournement
 restarts.
 ============
 */
-char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
+const char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
 	char        *value;
 	gclient_t   *client;
 	char userinfo[MAX_INFO_STRING];
 	gentity_t   *ent;
+	qboolean	isAdmin;
 #ifdef USEXPSTORAGE
 	ipXPStorage_t* xpBackup;
 	int i;
 #endif // USEXPSTORAGE
 
+	if ( clientNum >= level.maxclients ) {
+		return "Bad connection slot.";
+	}
+
 	ent = &g_entities[ clientNum ];
+
+	// Gordon: porting q3f flag bug fix
+	//			If a player reconnects quickly after a disconnect, the client disconnect may never be called, thus flag can get lost in the ether
+	if ( ent->inuse ) {
+		G_LogPrintf( "Forcing disconnect on active client: %i\n", clientNum );
+		// so lets just fix up anything that should happen on a disconnect
+		ClientDisconnect( clientNum );
+	}
+
+	ent->r.svFlags &= ~SVF_BOT;
+	ent->inuse = qfalse;
 
 	trap_GetUserinfo( clientNum, userinfo, sizeof( userinfo ) );
 
@@ -1498,7 +1500,13 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
 	// recommanding PB based IP / GUID banning, the builtin system is pretty limited
 	// check to see if they are on the banned IP list
 	value = Info_ValueForKey( userinfo, "ip" );
-	if ( G_FilterIPBanPacket( value ) ) {
+
+	if ( !strcmp( value, "localhost" ) && !isBot )
+		isAdmin = qtrue;
+	else
+		isAdmin = qfalse;
+
+	if ( !isAdmin && G_FilterIPBanPacket( value ) ) {
 		return "You are banned from this server.";
 	}
 
@@ -1507,12 +1515,12 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
 		if ( g_enforcemaxlives.integer && ( g_maxlives.integer > 0 || g_axismaxlives.integer > 0 || g_alliedmaxlives.integer > 0 ) ) {
 			if ( trap_Cvar_VariableIntegerValue( "sv_punkbuster" ) ) {
 				value = Info_ValueForKey( userinfo, "cl_guid" );
-				if ( G_FilterMaxLivesPacket( value ) ) {
+				if ( !isAdmin && G_FilterMaxLivesPacket( value ) ) {
 					return "Max Lives Enforcement Temp Ban. You will be able to reconnect when the next round starts. This ban is enforced to ensure you don't reconnect to get additional lives.";
 				}
 			} else {
 				value = Info_ValueForKey( userinfo, "ip" ); // this isn't really needed, oh well.
-				if ( G_FilterMaxLivesIPPacket( value ) ) {
+				if ( !isAdmin && G_FilterMaxLivesIPPacket( value ) ) {
 					return "Max Lives Enforcement Temp Ban. You will be able to reconnect when the next round starts. This ban is enforced to ensure you don't reconnect to get additional lives.";
 				}
 			}
@@ -1523,41 +1531,36 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
 	// we don't check password for bots and local client
 	// NOTE: local client <-> "ip" "localhost"
 	//   this means this client is not running in our current process
-	if ( !isBot && !( ent->r.svFlags & SVF_BOT ) && ( strcmp( Info_ValueForKey( userinfo, "ip" ), "localhost" ) != 0 ) ) {
+	if ( !isBot && !isAdmin ) {
 		// check for a password
 		value = Info_ValueForKey( userinfo, "password" );
 		if ( g_password.string[0] && Q_stricmp( g_password.string, "none" ) && strcmp( g_password.string, value ) != 0 ) {
-			if ( !sv_privatepassword.string[ 0 ] || strcmp( sv_privatepassword.string, value ) ) {
+			if ( !g_privatepassword.string[ 0 ] || strcmp( g_privatepassword.string, value ) ) {
 				return "Invalid password";
 			}
 		}
-	}
-
-	// Gordon: porting q3f flag bug fix
-	//			If a player reconnects quickly after a disconnect, the client disconnect may never be called, thus flag can get lost in the ether
-	if ( ent->inuse ) {
-		G_LogPrintf( "Forcing disconnect on active client: %i\n", ent - g_entities );
-		// so lets just fix up anything that should happen on a disconnect
-		ClientDisconnect( ent - g_entities );
 	}
 
 	// they can connect
 	ent->client = level.clients + clientNum;
 	client = ent->client;
 
-
-
 	memset( client, 0, sizeof( *client ) );
+
+	client->ps.clientNum = clientNum;
+
+	if ( !ClientUserinfoChanged( clientNum ) ) {
+		return ban_reason;
+	}
 
 	client->pers.connected = CON_CONNECTING;
 	client->pers.connectTime = level.time;          // DHM - Nerve
 
 	if ( firstTime ) {
 		client->pers.initialSpawn = qtrue;              // DHM - Nerve
-
 	}
 	// read or initialize the session data
-	if ( firstTime ) {
+	if ( firstTime || level.newSession ) {
 		G_InitSessionData( client, userinfo );
 		client->pers.enterTime = level.time;
 		client->ps.persistant[PERS_SCORE] = 0;
@@ -1583,30 +1586,7 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
 		client->pers.enterTime = level.time;
 	}
 
-	if ( isBot ) {
-		// Set up the name for the bot client before initing the bot
-		value = Info_ValueForKey( userinfo, "scriptName" );
-		if ( value && value[0] ) {
-			Q_strncpyz( client->pers.botScriptName, value, sizeof( client->pers.botScriptName ) );
-			ent->scriptName = client->pers.botScriptName;
-		}
-		ent->aiName = ent->scriptName;
-		ent->s.number = clientNum;
-
-		ent->r.svFlags |= SVF_BOT;
-		ent->inuse = qtrue;
-		// if this bot is reconnecting, and they aren't supposed to respawn, then dont let it in
-		if ( !firstTime ) {
-			value = Info_ValueForKey( userinfo, "respawn" );
-			if ( value && value[0] && ( !Q_stricmp( value, "NO" ) || !Q_stricmp( value, "DISCONNECT" ) ) ) {
-				return "BotConnectFailed (no respawn)";
-			}
-		}
-
-		if ( !G_BotConnect( clientNum, !firstTime ) ) {
-			return "BotConnectfailed";
-		}
-	} else if ( g_gametype.integer == GT_COOP || g_gametype.integer == GT_SINGLE_PLAYER )    {
+	if ( g_gametype.integer == GT_COOP || g_gametype.integer == GT_SINGLE_PLAYER )    {
 		// RF, in single player, enforce team = ALLIES
 		// Arnout: disabled this for savegames as the double ClientBegin it causes wipes out all loaded data
 		if ( saveGamePending != 2 ) {
@@ -1623,6 +1603,8 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
 		// unlink the entity - just in case they were already connected
 		trap_UnlinkEntity( ent );
 	}
+
+	ent->inuse = qtrue;
 
 	// get and distribute relevent paramters
 	G_LogPrintf( "ClientConnect: %i\n", clientNum );
@@ -1702,6 +1684,9 @@ void ClientBegin( int clientNum ) {
 	ent->touch = 0;
 	ent->pain = 0;
 	ent->client = client;
+
+	if ( client->pers.connected == CON_DISCONNECTED )
+		return;
 
 	client->pers.connected = CON_CONNECTED;
 	client->pers.teamState.state = TEAM_BEGIN;
@@ -1825,7 +1810,7 @@ void ClientBegin( int clientNum ) {
 	// OSP
 }
 
-gentity_t *SelectSpawnPointFromList( char *list, vec3_t spawn_origin, vec3_t spawn_angles ) {
+/*gentity_t *SelectSpawnPointFromList( char *list, vec3_t spawn_origin, vec3_t spawn_angles ) {
 	char *pStr, *token;
 	gentity_t   *spawnPoint = NULL, *trav;
 	#define MAX_SPAWNPOINTFROMLIST_POINTS   16
@@ -1863,11 +1848,7 @@ gentity_t *SelectSpawnPointFromList( char *list, vec3_t spawn_origin, vec3_t spa
 	}
 
 	return spawnPoint;
-}
-
-
-// TAT 1/14/2003 - init the bot's movement autonomy pos to it's current position
-void BotInitMovementAutonomyPos( gentity_t *bot );
+}*/
 
 #if 0 // rain - not used
 static char *G_CheckVersion( gentity_t *ent ) {
@@ -1906,7 +1887,6 @@ void ClientSpawn( gentity_t *ent, qboolean revived ) {
 	int flags;
 	int savedPing;
 	int savedTeam;
-	int savedSlotNumber;
 	index = ent - g_entities;
 	client = ent->client;
 
@@ -1972,9 +1952,6 @@ void ClientSpawn( gentity_t *ent, qboolean revived ) {
 	savedSess       = client->sess;
 	savedPing       = client->ps.ping;
 	savedTeam       = client->ps.teamNum;
-	// START	xkan, 8/27/2002
-	savedSlotNumber = client->botSlotNumber;
-	// END		xkan, 8/27/2002
 
 	for ( i = 0 ; i < MAX_PERSISTANT ; i++ ) {
 		persistant[i] = client->ps.persistant[i];
@@ -1992,9 +1969,6 @@ void ClientSpawn( gentity_t *ent, qboolean revived ) {
 	client->sess            = savedSess;
 	client->ps.ping         = savedPing;
 	client->ps.teamNum      = savedTeam;
-	// START	xkan, 8/27/2002
-	client->botSlotNumber   = savedSlotNumber;
-	// END		xkan, 8/27/2002
 
 	for ( i = 0 ; i < MAX_PERSISTANT ; i++ ) {
 		client->ps.persistant[i] = persistant[i];
@@ -2167,15 +2141,6 @@ void ClientSpawn( gentity_t *ent, qboolean revived ) {
 		SetClientViewAngle( ent, newangle );
 	}
 
-	if ( ent->r.svFlags & SVF_BOT ) {
-		// xkan, 10/11/2002 - the ideal view angle is defaulted to 0,0,0, but the
-		// spawn_angles is the desired angle for the bots to face.
-		BotSetIdealViewAngles( index, spawn_angles );
-
-		// TAT 1/14/2003 - now that we have our position in the world, init our autonomy positions
-		BotInitMovementAutonomyPos( ent );
-	}
-
 	if ( ent->client->sess.sessionTeam != TEAM_SPECTATOR ) {
 		//G_KillBox( ent );
 		trap_LinkEntity( ent );
@@ -2223,26 +2188,11 @@ void ClientSpawn( gentity_t *ent, qboolean revived ) {
 	// show_bug.cgi?id=569
 	G_ResetMarkers( ent );
 
-	// Set up bot speed bonusses
-	BotSpeedBonus( ent->s.number );
-
 	// RF, start the scripting system
 	if ( !revived && client->sess.sessionTeam != TEAM_SPECTATOR ) {
-		Bot_ScriptInitBot( ent->s.number );
-		//
-		if ( spawnPoint && spawnPoint->targetname ) {
-			Bot_ScriptEvent( ent->s.number, "spawn", spawnPoint->targetname );
-		} else {
-			Bot_ScriptEvent( ent->s.number, "spawn", "" );
-		}
 		// RF, call entity scripting event
 		G_Script_ScriptEvent( ent, "playerstart", "" );
-	} else if ( revived && ent->r.svFlags & SVF_BOT ) {
-		Bot_ScriptEvent( ent->s.number, "revived", "" );
 	}
-
-
-
 }
 
 
@@ -2266,7 +2216,7 @@ void ClientDisconnect( int clientNum ) {
 	int i;
 
 	ent = g_entities + clientNum;
-	if ( !ent->client ) {
+	if ( !ent->client || ent->client->pers.connected == CON_DISCONNECTED ) {
 		return;
 	}
 
@@ -2393,10 +2343,6 @@ void ClientDisconnect( int clientNum ) {
 
 
 	CalculateRanks();
-
-	if ( ent->r.svFlags & SVF_BOT ) {
-		BotAIShutdownClient( clientNum );
-	}
 
 	// OSP
 	G_verifyMatchState( i );

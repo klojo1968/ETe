@@ -75,39 +75,42 @@ If you have questions concerning this license or the applicable additional terms
 
 #define DEMOEXT	"dm_"			// standard demo extension
 
-#if defined _WIN32 && !defined __GNUC__
+#ifdef _MSC_VER
 
-#pragma warning(disable : 4018) // signed/unsigned mismatch
-#pragma warning(disable : 4032)
-#pragma warning(disable : 4051)
-#pragma warning(disable : 4057) // slightly different base types
-#pragma warning(disable : 4100) // unreferenced formal parameter
-#pragma warning(disable : 4115)
-#pragma warning(disable : 4125) // decimal digit terminates octal escape sequence
-#pragma warning(disable : 4127) // conditional expression is constant
-#pragma warning(disable : 4136)
-#pragma warning(disable	: 4152) // nonstandard extension, function/data pointer conversion in expression
+#pragma warning(disable : 4018)		// signed/unsigned mismatch
+//#pragma warning(disable : 4032)
+//#pragma warning(disable : 4051)
+#pragma warning(disable : 4057)		// slightly different base types
+#pragma warning(disable : 4100)		// unreferenced formal parameter
+//#pragma warning(disable : 4115)
+#pragma warning(disable : 4125)		// decimal digit terminates octal escape sequence
+#pragma warning(disable : 4127)		// conditional expression is constant
+//#pragma warning(disable : 4136)
+#pragma warning(disable	: 4152)		// nonstandard extension, function/data pointer conversion in expression
+#pragma warning(disable : 4200)		// nonstandard extension used: size-sided array in struct/union
 #pragma warning(disable : 4201)
-#pragma warning(disable : 4214)
+//#pragma warning(disable : 4214)
 #pragma warning(disable : 4244)
-//#pragma warning(disable	: 4142)		// benign redefinition
-#pragma warning(disable : 4305) // truncation from const double to float
-//#pragma warning(disable : 4310)		// cast truncates constant value
-//#pragma warning(disable :	4505)		// unreferenced local function has been removed
-#pragma warning(disable : 4514)
-#pragma warning(disable : 4702) // unreachable code
-#pragma warning(disable : 4711) // selected for automatic inline expansion
-#pragma warning(disable : 4220) // varargs matches remaining parameters
+//#pragma warning(disable : 4142)	// benign redefinition
+#pragma warning(disable : 4305)		// truncation from const double to float
+//#pragma warning(disable : 4310)	// cast truncates constant value
+//#pragma warning(disable :	4505)	// unreferenced local function has been removed
+//#pragma warning(disable : 4514)
+#pragma warning(disable : 4702)		// unreachable code
+#pragma warning(disable : 4711)		// selected for automatic inline expansion
+#pragma warning(disable : 4220)		// varargs matches remaining parameters
+#pragma warning(disable : 4324)		// 'q_jpeg_error_mgr_s' : structure was padded due to alignment specifier
+#pragma warning(disable : 4091)		// 'typedef': ignored on lef of <..> when no variable is declared
 #endif
 
-//Ignore __attribute__ on non-gcc platforms
-#ifndef __GNUC__
+//Ignore __attribute__ on non-gcc/clang platforms
+#if !defined(__GNUC__) && !defined(__clang__)
 #ifndef __attribute__
 #define __attribute__(x)
 #endif
 #endif
 
-#ifdef __GNUC__
+#if defined(__GNUC__) || defined(__clang__)
 #define UNUSED_VAR __attribute__((unused))
 #else
 #define UNUSED_VAR
@@ -119,11 +122,13 @@ If you have questions concerning this license or the applicable additional terms
 #define Q_EXPORT __global
 #elif ((__GNUC__ >= 3) && (!__EMX__) && (!sun))
 #define Q_EXPORT __attribute__((visibility("default")))
+#elif (defined(__clang__))
+#define Q_EXPORT __attribute__((visibility("default")))
 #else
 #define Q_EXPORT
 #endif
 
-#if defined(__GNUC__)
+#if defined(__GNUC__) || defined(__clang__)
 #define NORETURN __attribute__((noreturn))
 #define NORETURN_PTR __attribute__((noreturn))
 #elif defined(_MSC_VER)
@@ -135,7 +140,7 @@ If you have questions concerning this license or the applicable additional terms
 #define NORETURN_PTR /* nothing */
 #endif
 
-#if defined(__GNUC__)
+#if defined(__GNUC__) || defined(__clang__)
 #define FORMAT_PRINTF(x, y) __attribute__((format (printf, x, y)))
 #else
 #define FORMAT_PRINTF(x, y) /* nothing */
@@ -228,10 +233,10 @@ typedef enum { qfalse = 0, qtrue = 1 } qboolean;
 
 typedef union floatint_u
 {
-	int i;
-	unsigned int u;
+	int32_t i;
+	uint32_t u;
 	float f;
-	byte b[sizeof(int)];
+	byte b[sizeof(int32_t)];
 }
 floatint_t;
 
@@ -245,7 +250,7 @@ typedef int		clipHandle_t;
 
 #define PADP(base, alignment)	((void *) PAD((intptr_t) (base), (alignment)))
 
-#ifdef __GNUC__
+#if defined(__GNUC__) || defined(__clang__)
 #define QALIGN(x) __attribute__((aligned(x)))
 #else
 #define QALIGN(x)
@@ -259,19 +264,12 @@ typedef int		clipHandle_t;
 #define     SND_NOCUT           0x010   // Don't cut off.  Always let finish (overridden by SND_CUTOFF_ALL)
 #define     SND_NO_ATTENUATION  0x020   // don't attenuate (even though the sound is in voice channel, for example)
 
-
 #ifndef NULL
 #define NULL ((void *)0)
 #endif
 
 #define	MAX_QINT			0x7fffffff
 #define	MIN_QINT			(-MAX_QINT-1)
-
-// TTimo gcc: was missing, added from Q3 source
-#ifndef max
-#define max( x, y ) ( ( ( x ) > ( y ) ) ? ( x ) : ( y ) )
-#define min( x, y ) ( ( ( x ) < ( y ) ) ? ( x ) : ( y ) )
-#endif
 
 #define	MAX_UINT			((unsigned)(~0))
 
@@ -296,7 +294,7 @@ typedef int		clipHandle_t;
 #define	MAX_INFO_KEY		1024
 #define	MAX_INFO_VALUE		1024
 
-#define MAX_USERINFO_LENGTH (MAX_INFO_STRING-13-19) // incl. length of 'connect ""' or 'userinfo ""' and '\ip\255.255.255.255' key on server side and reserving one byte to avoid q3msgboom
+#define MAX_USERINFO_LENGTH (MAX_INFO_STRING-13) // incl. length of 'connect ""' or 'userinfo ""' and reserving one byte to avoid q3msgboom
 													
 #define	BIG_INFO_STRING		8192  // used for system info key only
 #define	BIG_INFO_KEY		  8192
@@ -353,7 +351,7 @@ typedef enum {
 
 // parameters to the main Error routine
 typedef enum {
-	ERR_FATAL,                  // exit the entire game with a popup window
+	ERR_FATAL = 0,                  // exit the entire game with a popup window
 	ERR_VID_FATAL,              // exit the entire game with a popup window and doesn't delete profile.pid
 	ERR_DROP,                   // print to console and disconnect from game
 	ERR_SERVERDISCONNECT,       // don't kill server
@@ -615,7 +613,7 @@ float Q_exp2f( float f );
 // fast float to int conversion
 #if id386 && !( ( defined __linux__ || defined __FreeBSD__ || defined __GNUC__ ) && ( defined __i386__ ) ) // rb010123
 long myftol( float f );
-#elif defined( __MACOS__ )
+#elif defined(__APPLE__) || defined(__APPLE_CC__)
 #define myftol( x ) (long)( x )
 #else
 extern long int lrintf( float x );
@@ -840,6 +838,7 @@ void MatrixMultiply( float in1[3][3], float in2[3][3], float out[3][3] );
 void AngleVectors( const vec3_t angles, vec3_t forward, vec3_t right, vec3_t up );
 void PerpendicularVector( vec3_t dst, const vec3_t src );
 int Q_isnan( float x );
+float Q_atof( const char *str );
 
 #ifndef MAX
 #define MAX(x,y) ((x)>(y)?(x):(y))
@@ -859,7 +858,8 @@ float DistanceFromVectorSquared( vec3_t p, vec3_t lp1, vec3_t lp2 );
 
 //=============================================
 
-float Com_Clamp( float min, float max, float value );
+float Com_ClampFloat( float min, float max, float value );
+int Com_ClampInt( int min, int max, int value );
 
 qboolean COM_SuffixCompare( const char *in, const char *suffixStr );
 
@@ -1067,7 +1067,7 @@ const char *Info_ValueForKeyToken( const char *key );
 qboolean Info_SetValueForKey_s( char *s, int slen, const char *key, const char *value );
 qboolean Info_Validate( const char *s );
 qboolean Info_ValidateKeyValue( const char *s );
-qboolean Info_NextPair( const char **s, char *key, char *value );
+const char *Info_NextPair( const char *s, char *key, char *value );
 int Info_RemoveKey( char *s, const char *key );
 
 // this is only here so the functions in q_shared.c and bg_*.c can link
@@ -1100,37 +1100,39 @@ default values.
 ==========================================================
 */
 
-#define CVAR_ARCHIVE        1   // set to cause it to be saved to vars.rc
+#define CVAR_ARCHIVE        0x0001   // set to cause it to be saved to vars.rc
 								// used for system variables, not for player
 								// specific configurations
-#define CVAR_USERINFO       2   // sent to server on connect or change
-#define CVAR_SERVERINFO     4   // sent in response to front end requests
-#define CVAR_SYSTEMINFO     8   // these cvars will be duplicated on all clients
-#define CVAR_INIT           16  // don't allow change from console at all,
+#define CVAR_USERINFO       0x0002   // sent to server on connect or change
+#define CVAR_SERVERINFO     0x0004   // sent in response to front end requests
+#define CVAR_SYSTEMINFO     0x0008   // these cvars will be duplicated on all clients
+#define CVAR_INIT           0x0010  // don't allow change from console at all,
 								// but can be set from the command line
-#define CVAR_LATCH          32  // will only change when C code next does
+#define CVAR_LATCH          0x0020  // will only change when C code next does
 								// a Cvar_Get(), so it can't be changed
 								// without proper initialization.  modified
 								// will be set, even though the value hasn't
 								// changed yet
-#define CVAR_ROM            64  // display only, cannot be set by user at all
-#define CVAR_USER_CREATED   128 // created by a set command
-#define CVAR_TEMP           256 // can be set even when cheats are disabled, but is not archived
-#define CVAR_CHEAT          512 // can not be changed if cheats are disabled
-#define CVAR_NORESTART      1024    // do not clear when a cvar_restart is issued
-#define CVAR_WOLFINFO       2048    // DHM - NERVE :: Like userinfo, but for wolf multiplayer info
+#define CVAR_ROM            0x0040  // display only, cannot be set by user at all
+#define CVAR_USER_CREATED   0x0080 // created by a set command
+#define CVAR_TEMP           0x0100 // can be set even when cheats are disabled, but is not archived
+#define CVAR_CHEAT          0x0200 // can not be changed if cheats are disabled
+#define CVAR_NORESTART      0x0400    // do not clear when a cvar_restart is issued
+#define CVAR_WOLFINFO       0x0800    // DHM - NERVE :: Like userinfo, but for wolf multiplayer info
 
-#define CVAR_UNSAFE         4096    // ydnar: unsafe system cvars (renderer, sound settings, anything that might cause a crash)
-#define CVAR_SERVERINFO_NOUPDATE        8192    // gordon: WONT automatically send this to clients, but server browsers will see it
+#define CVAR_UNSAFE         0x1000    // ydnar: unsafe system cvars (renderer, sound settings, anything that might cause a crash)
+#define CVAR_SERVERINFO_NOUPDATE        0x2000    // gordon: WONT automatically send this to clients, but server browsers will see it
 
-#define CVAR_SERVER_CREATED	16384	// cvar was created by a server the client connected to.
-#define CVAR_VM_CREATED		32768	// cvar was created exclusively in one of the VMs.
-#define CVAR_PROTECTED		65536	// prevent modifying this var from VMs or the server
+#define CVAR_SERVER_CREATED	0x4000	// cvar was created by a server the client connected to.
+#define CVAR_VM_CREATED		0x8000	// cvar was created exclusively in one of the VMs.
+#define CVAR_PROTECTED		0x10000	// prevent modifying this var from VMs or the server
 
-#define CVAR_NODEFAULT		131072	// do not write to config if matching with default value
+#define CVAR_NODEFAULT		0x20000	// do not write to config if matching with default value
 
-#define CVAR_PRIVATE		262144	// can't be read from VM
-#define CVAR_DEVELOPER		524288	// can be set only in developer mode
+#define CVAR_PRIVATE		0x40000	// can't be read from VM
+
+#define CVAR_DEVELOPER		0x80000	// can be set only in developer mode
+#define CVAR_NOTABCOMPLETE	0x100000 // no tab completion in console
 
 #define CVAR_ARCHIVE_ND		(CVAR_ARCHIVE | CVAR_NODEFAULT)
 
@@ -1167,7 +1169,7 @@ struct cvar_s {
 	int			flags;
 	qboolean	modified;			// set each time the cvar is changed
 	int			modificationCount;	// incremented each time the cvar is changed
-	float		value;				// atof( string )
+	float		value;				// Q_atof( string )
 	int			integer;			// atoi( string )
 	cvarValidator_t validator;
 	char		*mins;
@@ -1922,7 +1924,7 @@ typedef enum _flag_status {
 
 // NERVE - SMF - localization
 typedef enum {
-#ifndef __MACOS__   //DAJ USA
+#if !defined(__APPLE__) && !defined(__APPLE_CC__)   //DAJ USA
 	LANGUAGE_FRENCH = 0,
 	LANGUAGE_GERMAN,
 	LANGUAGE_ITALIAN,

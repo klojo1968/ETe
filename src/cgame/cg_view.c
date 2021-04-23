@@ -935,7 +935,7 @@ static int CG_CalcFov( void ) {
 		fov_x = 90;
 	} else {
 		fov_x = cg_fov.value;
-		if ( !developer.integer ) {
+		if ( !cg_developer.integer ) {
 			if ( fov_x < 90 ) {
 				fov_x = 90;
 			} else if ( fov_x > 160 ) {
@@ -943,7 +943,7 @@ static int CG_CalcFov( void ) {
 			}
 		}
 
-		if ( !cg.renderingThirdPerson || developer.integer ) {
+		if ( !cg.renderingThirdPerson || cg_developer.integer ) {
 			// account for zooms
 			if ( cg.zoomval ) {
 				zoomFov = cg.zoomval;   // (SA) use user scrolled amount
@@ -972,7 +972,7 @@ static int CG_CalcFov( void ) {
 			} else {                    // binoc zooming out
 				f = ( cg.time - cg.zoomTime ) / (float)ZOOM_TIME;
 				if ( f > 1.0 ) {
-					fov_x = fov_x;
+					//fov_x = fov_x;
 				} else {
 					fov_x = zoomFov + f * ( fov_x - zoomFov );
 				}
@@ -993,6 +993,16 @@ static int CG_CalcFov( void ) {
 
 	if ( cg.showGameView ) {
 		fov_x = fov_y = 60.f;
+	}
+
+	if ( cg_fovAdjust.integer ) {
+		// Based on LordHavoc's code for Darkplaces
+		// http://www.quakeworld.nu/forum/topic/53/what-does-your-qw-look-like/page/30
+		const float baseAspect = 0.75f; // 3/4
+		const float aspect = (float)cg.refdef_current->width/(float)cg.refdef_current->height;
+		const float desiredFov = fov_x;
+
+		fov_x = atan2( tan( desiredFov * M_PI / 360.0f ) * baseAspect * aspect, 1 ) * 360.0f / M_PI;
 	}
 
 	// Arnout: this is weird... (but ensures square pixel ratio!)
@@ -1366,8 +1376,8 @@ int CG_CalcViewValues( void ) {
 
 //=========================================================================
 
-char* CG_MustParse( char** pString, const char* pErrorMsg ) {
-	char* token = COM_Parse( pString );
+const char* CG_MustParse( const char** pString, const char* pErrorMsg ) {
+	const char* token = COM_Parse( pString );
 	if ( !*token ) {
 		CG_Error( pErrorMsg );
 	}
@@ -1376,10 +1386,10 @@ char* CG_MustParse( char** pString, const char* pErrorMsg ) {
 
 void CG_ParseSkyBox( void ) {
 	int fogStart, fogEnd;
-	char *cstr, *token;
+	const char *cstr, *token;
 	vec4_t fogColor;
 
-	cstr = (char*)CG_ConfigString( CS_SKYBOXORG );
+	cstr = CG_ConfigString( CS_SKYBOXORG );
 
 	if ( !*cstr ) {
 		cg.skyboxEnabled = qfalse;
@@ -1443,7 +1453,7 @@ void CG_ParseTagConnects( void ) {
 }
 
 void CG_ParseTagConnect( int tagNum ) {
-	char *token, *pString = (char*)CG_ConfigString( tagNum ); // Gordon: bleh, i hate that cast away of the const
+	const char *token, *pString = CG_ConfigString( tagNum ); // Gordon: bleh, i hate that cast away of the const
 	int entNum;
 
 	if ( !*pString ) {
@@ -1708,6 +1718,30 @@ qboolean CG_CullPointAndRadius( const vec3_t pt, vec_t radius ) {
 	return( qfalse );
 }
 
+
+/*
+=================
+CG_FirstFrame
+
+Called once on first rendered frame
+=================
+*/
+static void CG_FirstFrame( void )
+{
+	CG_SetConfigValues();
+
+	cgs.voteTime = atoi( CG_ConfigString( CS_VOTE_TIME ) );
+	cgs.voteYes = atoi( CG_ConfigString( CS_VOTE_YES ) );
+	cgs.voteNo = atoi( CG_ConfigString( CS_VOTE_NO ) );
+	Q_strncpyz( cgs.voteString, CG_ConfigString( CS_VOTE_STRING ), sizeof( cgs.voteString ) );
+
+	if ( cgs.voteTime )
+		cgs.voteModified = qtrue;
+	else
+		cgs.voteModified = qfalse;
+}
+
+
 //=========================================================================
 
 extern void CG_SetupDlightstyles( void );
@@ -1828,6 +1862,9 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 	if ( cg_norender.integer ) {
 		return;
 	}
+
+	if ( cg.clientFrame == 0 )
+		CG_FirstFrame();
 
 	// this counter will be bumped for every valid scene we generate
 	cg.clientFrame++;

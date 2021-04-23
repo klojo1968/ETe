@@ -322,10 +322,18 @@ void R_AddMD3Surfaces( trRefEntity_t *ent ) {
 		 || ( ent->e.frame < 0 )
 		 || ( ent->e.oldframe >= tr.currentModel->model.md3[lod]->numFrames )
 		 || ( ent->e.oldframe < 0 ) ) {
-		ri.Printf( PRINT_DEVELOPER, "R_AddMD3Surfaces: no such frame %d to %d for '%s' (%d)\n",
-				   ent->e.oldframe, ent->e.frame,
-				   tr.currentModel->name,
-				   tr.currentModel->model.md3[ lod ]->numFrames );
+
+		// low level of detail may be restricted to 1 frame (i.e player head)
+		// in this case, we assume the frame number differences is wanted
+		// because we don't want animation at far distance
+		// skipped warning message
+
+		if( lod == 0 || tr.currentModel->model.md3[lod]->numFrames != 1 ) {
+			ri.Printf( PRINT_DEVELOPER, "R_AddMD3Surfaces: no such frame %d to %d for '%s' (%d)\n",
+					ent->e.oldframe, ent->e.frame,
+					tr.currentModel->name,
+					tr.currentModel->model.md3[ lod ]->numFrames );
+		}
 		ent->e.frame = 0;
 		ent->e.oldframe = 0;
 	}

@@ -301,6 +301,11 @@ typedef struct {
 
 #define NUM_TEXTURE_BUNDLES 2
 
+#define TESS_ST0	1<<0
+#define TESS_ST1	1<<1
+#define TESS_ENV0	1<<2
+#define TESS_ENV1	1<<3
+
 typedef struct {
 	qboolean active;
 
@@ -332,7 +337,7 @@ typedef struct {
 	uint32_t		color_offset;		// within current shader
 	uint32_t		tex_offset[2];		// within current shader
 
-	qboolean		needViewPos;
+	uint32_t		tessFlags;
 
 } shaderStage_t;
 
@@ -414,6 +419,7 @@ typedef struct shader_s {
 
 #ifdef USE_PMLIGHT
 	int			lightingStage;
+	int			lightingBundle;
 #endif
 	qboolean	isStaticShader;
 	int			svarsSize;
@@ -1272,6 +1278,15 @@ typedef struct {
 	int			currentArray;
 } glstate_t;
 
+typedef struct glstatic_s {
+	// unmodified width/height according to actual \r_mode*
+	int windowWidth;
+	int windowHeight;
+	int captureWidth;
+	int captureHeight;
+	int initTime;
+} glstatic_t;
+
 typedef struct {
 	int c_surfaces, c_shaders, c_vertexes, c_indexes, c_totalIndexes;
 	float c_overDraw;
@@ -1470,13 +1485,9 @@ extern glconfig_t glConfig;         // outside of TR since it shouldn't be clear
 
 extern glstate_t glState;           // outside of TR since it shouldn't be cleared during ref re-init
 
-	// unmodified width/height according to actual \r_mode*
-extern	int					windowWidth;
-extern	int					windowHeight;
-extern	qboolean			windowAdjusted;
+extern glstatic_t gls;
 
-extern	int					captureWidth;
-extern	int					captureHeight;
+extern	qboolean			windowAdjusted;
 extern	qboolean			superSampled;
 
 //
@@ -1512,6 +1523,7 @@ extern cvar_t	*r_dlightSpecColor;		// -1.0 - 1.0
 extern cvar_t	*r_dlightScale;			// 0.1 - 1.0
 extern cvar_t	*r_dlightIntensity;		// 0.1 - 1.0
 #endif
+extern cvar_t	*r_dlightSaturation;	// 0.0 - 1.0
 extern cvar_t	*r_vbo;
 extern cvar_t	*r_fbo;
 extern cvar_t	*r_hdr;
@@ -2509,5 +2521,7 @@ extern const char *fogLevelVPCode;
 
 qboolean ARB_CompileProgram( programType ptype, const char *text, GLuint program );
 void ARB_ProgramEnableExt( GLuint vertexProgram, GLuint fragmentProgram );
+
+void QGL_SetRenderScale( qboolean verbose );
 
 #endif //TR_LOCAL_H

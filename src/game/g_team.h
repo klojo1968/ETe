@@ -108,9 +108,6 @@ void Team_InitGame( void );
 void Team_ReturnFlag( gentity_t *ent );
 void Team_FreeEntity( gentity_t *ent );
 gentity_t *SelectCTFSpawnPoint( team_t team, int teamstate, vec3_t origin, vec3_t angles, int spawnObjective );
-// START Mad Doc - TDF
-gentity_t *SelectPlayerSpawnPoint( team_t team, int teamstate, vec3_t origin, vec3_t angles );
-// END Mad Doc - TDF
 int Team_GetLocation( gentity_t *ent );
 qboolean Team_GetLocationMsg( gentity_t *ent, char *loc, int loclen );
 void TeamplayInfoMessage( team_t team );

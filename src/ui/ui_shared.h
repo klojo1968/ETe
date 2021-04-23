@@ -31,7 +31,7 @@ If you have questions concerning this license or the applicable additional terms
 
 
 #include "../qcommon/q_shared.h"
-#include "../renderer/tr_types.h"
+#include "../renderercommon/tr_types.h"
 #include "keycodes.h"
 
 #include "../../etmain/ui/menudef.h"
@@ -391,7 +391,7 @@ typedef struct {
 
 typedef struct {
 	const char *name;
-	void ( *handler )( itemDef_t *item, qboolean *bAbort, char** args );
+	void ( *handler )( itemDef_t *item, qboolean *bAbort, const char** args );
 } commandDef_t;
 
 typedef struct {
@@ -421,7 +421,7 @@ typedef struct {
 	void ( *ownerDrawItem )( float x, float y, float w, float h, float text_x, float text_y, int ownerDraw, int ownerDrawFlags, int align, float special, float scale, vec4_t color, qhandle_t shader, int textStyle );
 	float ( *getValue )( int ownerDraw, int type );
 	qboolean ( *ownerDrawVisible )( int flags );
-	void ( *runScript )( char **p );
+	void ( *runScript )( const char **p );
 	void ( *getTeamColor )( vec4_t *color );
 	void ( *getCVarString )( const char *cvar, char *buffer, int bufsize );
 	float ( *getCVarValue )( const char *cvar );
@@ -450,7 +450,7 @@ typedef struct {
 
 	void ( *setBinding )( int keynum, const char *binding );
 	void ( *executeText )( int exec_when, const char *text );
-	void ( *Error )( int level, const char *error, ... );
+	void ( QDECL *Error )( errorParm_t level, const char *error, ... ) NORETURN_PTR;
 	void ( *Print )( const char *msg, ... );
 	void ( *Pause )( qboolean b );
 	int ( *ownerDrawWidth )( int ownerDraw, float scale );
@@ -501,12 +501,12 @@ menuDef_t *Menu_GetFocused();
 void Menu_HandleKey( menuDef_t *menu, int key, qboolean down );
 void Menu_HandleMouseMove( menuDef_t *menu, float x, float y );
 void Menu_ScrollFeeder( menuDef_t *menu, int feeder, qboolean down );
-qboolean Float_Parse( char **p, float *f );
-qboolean Color_Parse( char **p, vec4_t *c );
-qboolean Int_Parse( char **p, int *i );
-qboolean Rect_Parse( char **p, rectDef_t *r );
-qboolean String_Parse( char **p, const char **out );
-qboolean Script_Parse( char **p, const char **out );
+qboolean Float_Parse( const char **p, float *f );
+qboolean Color_Parse( const char **p, vec4_t *c );
+qboolean Int_Parse( const char **p, int *i );
+qboolean Rect_Parse( const char **p, rectDef_t *r );
+qboolean String_Parse( const char **p, const char **out );
+//qboolean Script_Parse( const char **p, const char **out );
 void PC_SourceError( int handle, char *format, ... );
 void PC_SourceWarning( int handle, char *format, ... );
 qboolean PC_Float_Parse( int handle, float *f );

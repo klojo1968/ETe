@@ -1,0 +1,194 @@
+name: build
+
+on:
+  # Run on pushes to tags, the "master" branch, and PR's
+  push:
+    tags-ignore:
+    branches:
+      - master
+    paths-ignore:
+      - '**.md'
+      - '*.txt'
+      - '.gitignore'
+      - 'docs/*'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - '*.txt'
+      - '.gitignore'
+      - 'docs/*'
+
+  workflow_dispatch:
+
+jobs:
+  windows-msvc:
+    name: ${{ matrix.config }} Windows ${{ matrix.arch }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        #arch: [arm64, x86, x64]
+        #arch: [x86, x64]
+        arch: [x86]
+        config: [Release]
+        include:
+         # - arch: arm64
+         #   platform: ARM64
+         #   suffix: .arm64
+
+          - arch: x86
+            platform: Win32
+
+          #- arch: x64
+          #  platform: x64
+          #  suffix: .x86_64
+
+    steps:
+    - uses: microsoft/setup-msbuild@v1.0.2
+
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: Create Binary Directory
+      working-directory: ${{github.workspace}}
+      run: cmake -E make_directory ${{github.workspace}}/bin
+
+    - name: Build
+      working-directory: ${{github.workspace}}/src
+      run: |
+        msbuild wolfded.vcxproj -m -p:PlatformToolset=v141_xp,Configuration=${{ matrix.config }},Platform=${{ matrix.platform }}
+
+        msbuild renderer\renderer.vcxproj -m -p:PlatformToolset=v141_xp,Configuration=${{ matrix.config }},Platform=${{ matrix.platform }}
+
+        msbuild wolf.vcxproj -m -p:PlatformToolset=v141_xp,Configuration=${{ matrix.config }},Platform=${{ matrix.platform }},UseWasapi=USE_WASAPI=0
+
+        msbuild game\game.vcxproj -m -p:PlatformToolset=v141_xp,Configuration=${{ matrix.config }},Platform=${{ matrix.platform }}
+        
+        msbuild ui\ui.vcxproj -m -p:PlatformToolset=v141_xp,Configuration=${{ matrix.config }},Platform=${{ matrix.platform }}
+        
+        msbuild cgame\cgame.vcxproj -m -p:PlatformToolset=v141_xp,Configuration=${{ matrix.config }},Platform=${{ matrix.platform }}
+
+    - name: Copy outputs to Binary Directory
+      working-directory: ${{github.workspace}}/src
+      run: |
+          copy ded\Release\ETe-ded.exe ${{github.workspace}}\bin\ETe-ded${{ matrix.suffix }}.exe
+          copy Release\ETe.exe ${{github.workspace}}\bin\ETe${{ matrix.suffix }}.exe
+          copy Release\qagame_mp_x86.dll ${{github.workspace}}\bin\
+          copy Release\ui_mp_x86.dll ${{github.workspace}}\bin\
+          copy Release\cgame_mp_x86.dll ${{github.workspace}}\bin\
+
+    - uses: actions/upload-artifact@v2
+      if: ${{ matrix.config == 'Release' }}
+      with:
+        name: windows-${{ matrix.arch }}
+        path: |
+          bin/*.exe
+          bin/*.dll
+        if-no-files-found: error
+        retention-days: 5
+
+  ubuntu-x86:
+    name: ${{ matrix.config }} Ubuntu ${{ matrix.arch }}
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x86, x86_64]
+        cc: [gcc]
+        cxx: [g++]
+        config: [Release]
+        include:
+          - config: Release
+            rule: install
+          - arch: x86
+            use_sdl: true
+          - arch: x86_64
+            use_sdl: true
+
+    steps:
+    - name: Install tools
+      run: |
+        if [ ${{ matrix.arch }} == "x86" ]; then
+          sudo dpkg --add-architecture i386
+          sudo apt-get -qq update
+          sudo apt-get -y install gcc-multilib g++-multilib ninja-build libglib2.0-dev:i386 libgl1-mesa-dev:i386 libasound2-dev:i386 libpulse-dev:i386 libjpeg-dev:i386 libsdl2-dev:i386 libcurl4-openssl-dev:i386
+        else
+          sudo apt-get -qq update
+          sudo apt-get -y install ninja-build libglib2.0-dev libgl1-mesa-dev libasound2-dev libpulse-dev libjpeg-dev libsdl2-dev libcurl4-openssl-dev
+        fi
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: Create Build Directory
+      working-directory: ${{github.workspace}}/src
+      run: cmake -E make_directory ${{github.workspace}}/src/bin
+
+    - name: Configure CMake
+      working-directory: ${{github.workspace}}/src/bin
+      run: |
+        if [ ${{ matrix.arch }} == "x86" ]; then
+          cmake .. -G "Ninja" -DCMAKE_BUILD_TYPE=${{ matrix.config }} -DUSE_SDL2=${{ matrix.use_sdl }} -DBUILD_ETMAIN_MOD=TRUE -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/linux-i686.cmake
+        else
+          cmake .. -G "Ninja" -DCMAKE_BUILD_TYPE=${{ matrix.config }} -DUSE_SDL2=${{ matrix.use_sdl }} -DBUILD_ETMAIN_MOD=TRUE
+        fi
+
+    - name: Build
+      working-directory: ${{github.workspace}}/src/bin
+      run: cmake --build . --config ${{ matrix.config }}
+
+    - uses: actions/upload-artifact@v2
+      if: matrix.cc == 'gcc' && matrix.config == 'Release'
+      with:
+        name: linux-${{ matrix.arch }}
+        path: |
+          src/bin/ete*.${{ matrix.arch }}
+          src/bin/*.so
+        if-no-files-found: error
+        retention-days: 5
+
+  macos-x86:
+    name: ${{ matrix.config }} macOS ${{ matrix.arch }}
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x86_64]
+        cc: [clang]
+        cxx: [clang++]
+        config: [Release]
+        include:
+          - config: Release
+            rule: install
+
+    steps:
+    - name: Install tools
+      run: brew install coreutils ninja sdl2
+
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: Create Build Directory
+      working-directory: ${{github.workspace}}/src
+      run: cmake -E make_directory ${{github.workspace}}/src/bin
+
+    - name: Configure CMake
+      working-directory: ${{github.workspace}}/src/bin
+      run: cmake .. -G "Ninja" -DCMAKE_BUILD_TYPE=${{ matrix.config }} -DUSE_SDL2=TRUE -DBUILD_ETMAIN_MOD=TRUE
+
+    - name: Build
+      working-directory: ${{github.workspace}}/src/bin
+      run: cmake --build . --config ${{ matrix.config }}
+
+    - uses: actions/upload-artifact@v2
+      if: matrix.cc == 'clang' && matrix.config == 'Release'
+      with:
+        name: macos-${{ matrix.arch }}
+        path: |
+          src/bin/ete*.${{ matrix.arch }}
+          src/bin/*.dylib
+          src/bin/*_mac
+        if-no-files-found: error
+        retention-days: 5

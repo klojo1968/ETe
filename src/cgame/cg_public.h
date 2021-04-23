@@ -266,11 +266,13 @@ typedef enum {
 	CG_R_FINISH,
 	// -bani
 
+#ifndef CGAMEDLL
 	// engine extensions
 	CG_R_ADDREFENTITYTOSCENE2,
 	CG_R_FORCEFIXEDDLIGHTS,
 	CG_R_ADDLINEARLIGHTTOSCENE,
 	CG_TRAP_GETVALUE = COM_TRAP_GETVALUE,
+#endif
 
 } cgameImport_t;
 

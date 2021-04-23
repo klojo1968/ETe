@@ -40,8 +40,7 @@ If you have questions concerning this license or the applicable additional terms
 
 #ifdef _WIN32
 #include <direct.h>
-#endif
-#ifdef __linux__
+#else
 #include <unistd.h>
 #endif
 
@@ -208,13 +207,13 @@ or configs will never get loaded from disk!
 
 */
 
-static const unsigned pak_checksums[] = {
+/*static const unsigned pak_checksums[] = {
 	2573271400u,
 	1581790464u,
 	608521179u,
-};
+};*/
 
-static const unsigned mpbin_checksum = 2004278281u;
+//static const unsigned mpbin_checksum = 2004278281u;
 
 #define USE_PK3_CACHE
 #define USE_PK3_CACHE_FILE
@@ -360,7 +359,7 @@ FILE*		missingFiles = NULL;
 #endif
 
 static int FS_GetModList( char *listbuf, int bufsize );
-static void FS_CheckIdPaks( void );
+//static void FS_CheckIdPaks( void );
 void FS_Reload( void );
 
 
@@ -5120,8 +5119,8 @@ static void FS_Startup( void ) {
 	fs_gamedirvar->modified = qfalse; // We just loaded, it's not modified
 
 	// check original ET files
-	if ( !Q_stricmp( fs_basegame->string, BASEGAME ) )
-		FS_CheckIdPaks();
+	//if ( !Q_stricmp( fs_basegame->string, BASEGAME ) )
+	//	FS_CheckIdPaks();
 
 #ifdef FS_MISSING
 	if (missingFiles == NULL) {
@@ -5138,6 +5137,24 @@ static void FS_Startup( void ) {
 }
 
 
+#if 0
+static void FS_PrintSearchPaths( void )
+{
+	searchpath_t *path = fs_searchpaths;
+
+	Com_Printf( "\nSearch paths:\n" );
+
+	while ( path )
+	{
+		if ( path->dir && path->policy == DIR_STATIC )
+			Com_Printf( " * %s\n", path->dir->path );
+
+		path = path->next;
+	}
+}
+#endif
+
+
 /*
 ===================
 FS_CheckIdPaks
@@ -5147,15 +5164,15 @@ Note: If you're building a game that doesn't depend on the
 ET media pak0.pk3, you'll want to remove this function
 ===================
 */
+#if 0
 static void FS_CheckIdPaks( void )
 {
-	searchpath_t	*path;
+	searchpath_t *path;
+	const char* pakBasename;
 	unsigned foundPak = 0;
 
-	for( path = fs_searchpaths; path; path = path->next )
+	for ( path = fs_searchpaths; path; path = path->next )
 	{
-		const char* pakBasename;
-
 		if ( !path->pack )
 			continue;
 
@@ -5167,6 +5184,8 @@ static void FS_CheckIdPaks( void )
 		{
 			if( (unsigned int)path->pack->checksum != pak_checksums[pakBasename[3]-'0'] )
 			{
+				FS_PrintSearchPaths();
+
 				if(pakBasename[3] == '0')
 				{
 					Com_Printf("\n\n"
@@ -5183,7 +5202,7 @@ static void FS_CheckIdPaks( void )
 						"**************************************************\n"
 						"ERROR: pak%d.pk3 is present but its checksum (%u)\n"
 						"is not correct. Please re-install Wolfenstein: Enemy Territory \n"
-#ifdef __MACOS__
+#if defined(__APPLE__) || defined(__APPLE_CC__)
 						"v2.60d pk3 files\n"
 #else
 						"v2.60b pk3 files\n"
@@ -5196,16 +5215,19 @@ static void FS_CheckIdPaks( void )
 
 			foundPak |= 1<<(pakBasename[3]-'0');
 		}
+		#if 0
 		else if(!Q_stricmpn( path->pack->pakGamename, BASEGAME, MAX_OSPATH )
 			&& !Q_stricmp( pakBasename, "mp_bin" ))
 		{
 			if( (unsigned int)path->pack->checksum != mpbin_checksum )
 			{
+				FS_PrintSearchPaths();
+
 				Com_Printf("\n\n"
 					"**************************************************\n"
 					"ERROR: mp_bin.pk3 is present but its checksum (%u)\n"
 					"is not correct. Please re-install Wolfenstein: Enemy Territory \n"
-#ifdef __MACOS__
+#if defined(__APPLE__) || defined(__APPLE_CC__)
 					"v2.60d pk3 files\n"
 #else
 					"v2.60b pk3 files\n"
@@ -5217,10 +5239,13 @@ static void FS_CheckIdPaks( void )
 
 			foundPak |= 1<<3;
 		}
+		#endif
 	}
 
 	if((foundPak & 0xF) != 0xF )
 	{
+		FS_PrintSearchPaths();
+
 		if((foundPak&1) != 1 )
 		{
 			Com_Printf("\n\n"
@@ -5233,24 +5258,26 @@ static void FS_CheckIdPaks( void )
 			Com_Printf("\n\n"
 			"Point Release files are missing. Please\n"
 			"Copy it from your legitimate ET installation or\n"
-#ifdef __MACOS__
+#if defined(__APPLE__) || defined(__APPLE_CC__)
 			"re-install ET with the 2.60d updates.\n");
 #else
 			"re-install ET with the 2.60b updates.\n");
 #endif
 		}
 
+#if 0
 		if((foundPak&0x8) != 0x8 )
 		{
 			Com_Printf("\n\n"
 			"Binary pack file is missing. Please\n"
 			"Copy it from your legitimate ET installation or\n"
-#ifdef __MACOS__
+#if defined(__APPLE__) || defined(__APPLE_CC__)
 			"re-install ET with the 2.60d updates.\n");
 #else
 			"re-install ET with the 2.60b updates.\n");
 #endif
 		}
+#endif
 
 		Com_Printf("\n\n"
 			"Also check that your ET executable is in\n"
@@ -5262,6 +5289,7 @@ static void FS_CheckIdPaks( void )
 			Com_Error(ERR_FATAL, "\n*** you need to install Wolfenstein: Enemy Territory in order to play ***");
 	}
 }
+#endif
 
 
 /*

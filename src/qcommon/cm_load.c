@@ -102,13 +102,13 @@ static void CMod_LoadShaders( const lump_t *l ) {
 
 	in = (void *)(cmod_base + l->fileofs);
 	if (l->filelen % sizeof(*in)) {
-		Com_Error (ERR_DROP, "CMod_LoadShaders: funny lump size");
+		Com_Error (ERR_DROP, "%s: funny lump size", __func__ );
 	}
-	count = l->filelen / sizeof(*in);
 
-	if (count < 1) {
-		Com_Error (ERR_DROP, "Map with no shaders");
-	}
+	count = l->filelen / sizeof(*in);
+	if ( count < 1 )
+		Com_Error (ERR_DROP, "%s: map with no shaders", __func__ );
+
 	cm.shaders = Hunk_Alloc( count * sizeof( *cm.shaders ), h_high );
 	cm.numShaders = count;
 
@@ -137,18 +137,18 @@ static void CMod_LoadSubmodels( const lump_t *l ) {
 
 	in = (void *)(cmod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
-		Com_Error (ERR_DROP, "CMod_LoadSubmodels: funny lump size");
-	count = l->filelen / sizeof(*in);
+		Com_Error( ERR_DROP, "%s: funny lump size", __func__ );
 
-	if (count < 1)
-		Com_Error (ERR_DROP, "Map with no models");
+	count = l->filelen / sizeof(*in);
+	if ( count < 1 )
+		Com_Error( ERR_DROP, "%s: map with no models", __func__ );
+
 	cm.cmodels = Hunk_Alloc( count * sizeof( *cm.cmodels ), h_high );
 	cm.numSubModels = count;
 
-	if ( count > MAX_SUBMODELS ) {
-		Com_Error( ERR_DROP, "MAX_SUBMODELS exceeded" );
-	}
-
+	if ( count > MAX_SUBMODELS )
+		Com_Error( ERR_DROP, "%s: MAX_SUBMODELS exceeded", __func__ );
+	
 	for ( i=0 ; i<count ; i++, in++)
 	{
 		out = &cm.cmodels[i];
@@ -193,14 +193,14 @@ static void CMod_LoadNodes( const lump_t *l ) {
 	cNode_t	*out;
 	int		i, j, count;
 
-	in = (void *)(cmod_base + l->fileofs);
+	in = (dnode_t *)(cmod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
-		Com_Error( ERR_DROP, "CMod_LoadNodes: funny lump size" );
+		Com_Error( ERR_DROP, "%s: funny lump size", __func__ );
 
 	count = l->filelen / sizeof(*in);
+	if ( count < 1 )
+		Com_Error( ERR_DROP, "%s: map has no nodes", __func__ );
 
-	if (count < 1)
-		Com_Error( ERR_DROP, "Map has no nodes" );
 	cm.nodes = Hunk_Alloc( count * sizeof( *cm.nodes ), h_high );
 	cm.numNodes = count;
 
@@ -248,9 +248,9 @@ static void CMod_LoadBrushes( const lump_t *l ) {
 	int			i, count;
 
 	in = (void *)(cmod_base + l->fileofs);
-	if (l->filelen % sizeof(*in)) {
-		Com_Error (ERR_DROP, "CMod_LoadBrushes: funny lump size");
-	}
+	if ( l->filelen % sizeof(*in) )
+		Com_Error( ERR_DROP, "%s: funny lump size", __func__ );
+
 	count = l->filelen / sizeof(*in);
 
 	cm.brushes = Hunk_Alloc( ( BOX_BRUSHES + count ) * sizeof( *cm.brushes ), h_high );
@@ -264,7 +264,7 @@ static void CMod_LoadBrushes( const lump_t *l ) {
 
 		out->shaderNum = LittleLong( in->shaderNum );
 		if ( out->shaderNum < 0 || out->shaderNum >= cm.numShaders ) {
-			Com_Error( ERR_DROP, "CMod_LoadBrushes: bad shaderNum: %i", out->shaderNum );
+			Com_Error( ERR_DROP, "%s: bad shaderNum: %i", __func__, out->shaderNum );
 		}
 		out->contents = cm.shaders[out->shaderNum].contentFlags;
 
@@ -288,12 +288,11 @@ static void CMod_LoadLeafs( const lump_t *l )
 
 	in = (void *)(cmod_base + l->fileofs);
 	if ( l->filelen % sizeof(*in) )
-		Com_Error( ERR_DROP, "CMod_LoadLeafs: funny lump size" );
+		Com_Error( ERR_DROP, "%s: funny lump size", __func__ );
 
 	count = l->filelen / sizeof(*in);
-
 	if ( count < 1 )
-		Com_Error( ERR_DROP, "Map with no leafs" );
+		Com_Error( ERR_DROP, "%s: map with no leafs", __func__ );
 
 	cm.leafs = Hunk_Alloc( ( BOX_LEAFS + count ) * sizeof( *cm.leafs ), h_high );
 	cm.numLeafs = count;
@@ -334,12 +333,11 @@ static void CMod_LoadPlanes( const lump_t *l )
 
 	in = (void *)(cmod_base + l->fileofs);
 	if ( l->filelen % sizeof(*in) )
-		Com_Error( ERR_DROP, "CMod_LoadPlanes: funny lump size" );
+		Com_Error( ERR_DROP, "%s: funny lump size", __func__ );
 
 	count = l->filelen / sizeof(*in);
-
 	if ( count < 1 )
-		Com_Error( ERR_DROP, "Map with no planes" );
+		Com_Error( ERR_DROP, "%s: map with no planes", __func__ );
 
 	cm.planes = Hunk_Alloc( ( BOX_PLANES + count ) * sizeof( *cm.planes ), h_high );
 	cm.numPlanes = count;
@@ -377,7 +375,7 @@ static void CMod_LoadLeafBrushes( const lump_t *l )
 
 	in = (void *)(cmod_base + l->fileofs);
 	if ( l->filelen % sizeof(*in) )
-		Com_Error( ERR_DROP, "CMod_LoadLeafBrushes: funny lump size" );
+		Com_Error( ERR_DROP, "%s: funny lump size", __func__ );
 
 	count = l->filelen / sizeof(*in);
 
@@ -407,7 +405,7 @@ static void CMod_LoadLeafSurfaces( const lump_t *l )
 
 	in = (void *)(cmod_base + l->fileofs);
 	if ( l->filelen % sizeof(*in) )
-		Com_Error( ERR_DROP, "CMod_LoadLeafSurfaces: funny lump size" );
+		Com_Error( ERR_DROP, "%s: funny lump size", __func__ );
 
 	count = l->filelen / sizeof(*in);
 
@@ -453,9 +451,9 @@ static void CMod_LoadBrushSides( const lump_t *l )
 	int				count;
 	int				num;
 
-	in = (void *)(cmod_base + l->fileofs);
+	in = (dbrushside_t *)(cmod_base + l->fileofs);
 	if ( l->filelen % sizeof(*in) ) {
-		Com_Error( ERR_DROP, "CMod_LoadBrushSides: funny lump size" );
+		Com_Error( ERR_DROP, "%s: funny lump size", __func__ );
 	}
 	count = l->filelen / sizeof(*in);
 
@@ -469,7 +467,7 @@ static void CMod_LoadBrushSides( const lump_t *l )
 		out->plane = &cm.planes[num];
 		out->shaderNum = LittleLong( in->shaderNum );
 		if ( out->shaderNum < 0 || out->shaderNum >= cm.numShaders ) {
-			Com_Error( ERR_DROP, "CMod_LoadBrushSides: bad shaderNum: %i", out->shaderNum );
+			Com_Error( ERR_DROP, "%s: bad shaderNum: %i", __func__, out->shaderNum );
 		}
 		out->surfaceFlags = cm.shaders[out->shaderNum].surfaceFlags;
 	}
@@ -481,7 +479,7 @@ static void CMod_LoadBrushSides( const lump_t *l )
 CMod_LoadEntityString
 =================
 */
-static void CMod_LoadEntityString( lump_t *l, const char *name ) {
+static void CMod_LoadEntityString( const lump_t *l, const char *name ) {
 	fileHandle_t h;
 	char entName[MAX_QPATH];
 	size_t entNameLen = 0;
@@ -559,13 +557,14 @@ static void CMod_LoadPatches( const lump_t *surfs, const lump_t *verts ) {
 
 	in = (void *)(cmod_base + surfs->fileofs);
 	if (surfs->filelen % sizeof(*in))
-		Com_Error (ERR_DROP, "CMod_LoadPatches: funny surf lump size");
+		Com_Error( ERR_DROP, "%s: funny surf lump size", __func__ );
+
 	cm.numSurfaces = count = surfs->filelen / sizeof(*in);
 	cm.surfaces = Hunk_Alloc( cm.numSurfaces * sizeof( cm.surfaces[0] ), h_high );
 
 	dv = (void *)(cmod_base + verts->fileofs);
 	if (verts->filelen % sizeof(*dv))
-		Com_Error (ERR_DROP, "CMod_LoadPatches: funny vert lump size");
+		Com_Error( ERR_DROP, "%s: funny vert lump size", __func__ );
 
 	// scan through all the surfaces, but only load patches,
 	// not planar faces
@@ -582,7 +581,7 @@ static void CMod_LoadPatches( const lump_t *surfs, const lump_t *verts ) {
 		height = LittleLong( in->patchHeight );
 		c = width * height;
 		if ( c > MAX_PATCH_VERTS ) {
-			Com_Error( ERR_DROP, "CMod_LoadPatches: MAX_PATCH_VERTS (%d)", MAX_PATCH_VERTS );
+			Com_Error( ERR_DROP, "%s: MAX_PATCH_VERTS (%d)", __func__, MAX_PATCH_VERTS );
 		}
 
 		dv_p = dv + LittleLong( in->firstVert );
@@ -603,26 +602,32 @@ static void CMod_LoadPatches( const lump_t *surfs, const lump_t *verts ) {
 
 //==================================================================
 
-unsigned CM_LumpChecksum(const lump_t *lump) {
-	return LittleLong (Com_BlockChecksum (cmod_base + lump->fileofs, lump->filelen));
+
+#if 0
+static uint32_t CM_LumpChecksum( const lump_t *lump ) {
+	return LittleLong( Com_BlockChecksum( cmod_base + lump->fileofs, lump->filelen ) );
 }
 
-unsigned CM_Checksum(const dheader_t *header) {
-	unsigned checksums[16];
-	checksums[0] = CM_LumpChecksum(&header->lumps[LUMP_SHADERS]);
-	checksums[1] = CM_LumpChecksum(&header->lumps[LUMP_LEAFS]);
-	checksums[2] = CM_LumpChecksum(&header->lumps[LUMP_LEAFBRUSHES]);
-	checksums[3] = CM_LumpChecksum(&header->lumps[LUMP_LEAFSURFACES]);
-	checksums[4] = CM_LumpChecksum(&header->lumps[LUMP_PLANES]);
-	checksums[5] = CM_LumpChecksum(&header->lumps[LUMP_BRUSHSIDES]);
-	checksums[6] = CM_LumpChecksum(&header->lumps[LUMP_BRUSHES]);
-	checksums[7] = CM_LumpChecksum(&header->lumps[LUMP_MODELS]);
-	checksums[8] = CM_LumpChecksum(&header->lumps[LUMP_NODES]);
-	checksums[9] = CM_LumpChecksum(&header->lumps[LUMP_SURFACES]);
-	checksums[10] = CM_LumpChecksum(&header->lumps[LUMP_DRAWVERTS]);
 
-	return LittleLong(Com_BlockChecksum(checksums, 11 * 4));
+static uint32_t CM_Checksum( const dheader_t *header ) {
+	uint32_t checksums[11];
+
+	checksums[0] = CM_LumpChecksum( &header->lumps[LUMP_SHADERS] );
+	checksums[1] = CM_LumpChecksum( &header->lumps[LUMP_LEAFS] );
+	checksums[2] = CM_LumpChecksum( &header->lumps[LUMP_LEAFBRUSHES] );
+	checksums[3] = CM_LumpChecksum( &header->lumps[LUMP_LEAFSURFACES] );
+	checksums[4] = CM_LumpChecksum( &header->lumps[LUMP_PLANES] );
+	checksums[5] = CM_LumpChecksum( &header->lumps[LUMP_BRUSHSIDES] );
+	checksums[6] = CM_LumpChecksum( &header->lumps[LUMP_BRUSHES] );
+	checksums[7] = CM_LumpChecksum( &header->lumps[LUMP_MODELS] );
+	checksums[8] = CM_LumpChecksum( &header->lumps[LUMP_NODES] );
+	checksums[9] = CM_LumpChecksum( &header->lumps[LUMP_SURFACES] );
+	checksums[10] = CM_LumpChecksum( &header->lumps[LUMP_DRAWVERTS] );
+
+	return LittleLong( Com_BlockChecksum( checksums, ARRAY_LEN( checksums ) * 4 ) );
 }
+#endif
+
 
 /*
 ==================
@@ -632,36 +637,33 @@ Loads in the map and all submodels
 ==================
 */
 void CM_LoadMap( const char *name, qboolean clientload, int *checksum ) {
-	union {
-		int				*i;
-		void			*v;
-	} buf;
+	void			*buf;
 	int				i;
 	dheader_t		header;
 	int				length;
-	static unsigned	last_checksum;
 
 	if ( !name || !name[0] ) {
-		Com_Error( ERR_DROP, "CM_LoadMap: NULL name" );
+		Com_Error( ERR_DROP, "%s: NULL name", __func__ );
 	}
 
 #ifndef BSPC
-	cm_noAreas = Cvar_Get ("cm_noAreas", "0", CVAR_CHEAT);
-	cm_noCurves = Cvar_Get ("cm_noCurves", "0", CVAR_CHEAT);
-	cm_playerCurveClip = Cvar_Get ("cm_playerCurveClip", "1", CVAR_ARCHIVE_ND|CVAR_CHEAT);
-	cm_optimize = Cvar_Get ("cm_optimize", "1", CVAR_CHEAT);
+	cm_noAreas = Cvar_Get( "cm_noAreas", "0", CVAR_CHEAT );
+	cm_noCurves = Cvar_Get( "cm_noCurves", "0", CVAR_CHEAT );
+	cm_playerCurveClip = Cvar_Get( "cm_playerCurveClip", "1", CVAR_ARCHIVE_ND | CVAR_CHEAT );
+	cm_optimize = Cvar_Get( "cm_optimize", "1", CVAR_CHEAT );
 #endif
-	Com_DPrintf( "CM_LoadMap( %s, %i )\n", name, clientload );
+
+	Com_DPrintf( "%s( '%s', %i )\n", __func__, name, clientload );
 
 	if ( !strcmp( cm.name, name ) && clientload ) {
-		*checksum = last_checksum;
+		*checksum = cm.checksum;
 		return;
 	}
 
 	// free old stuff
-	memset( &cm, 0, sizeof( cm ) );
-	CM_ClearLevelPatches();
+	CM_ClearMap();
 
+#if 0
 	if ( !name[0] ) {
 		cm.numLeafs = 1;
 		cm.numClusters = 1;
@@ -670,34 +672,44 @@ void CM_LoadMap( const char *name, qboolean clientload, int *checksum ) {
 		*checksum = 0;
 		return;
 	}
+#endif
 
 	//
 	// load the file
 	//
 #ifndef BSPC
-	length = FS_ReadFile( name, &buf.v );
+	length = FS_ReadFile( name, &buf );
 #else
-	length = LoadQuakeFile((quakefile_t *) name, &buf.v);
+	length = LoadQuakeFile( (quakefile_t *) name, &buf );
 #endif
 
-	if ( !buf.i ) {
-		Com_Error (ERR_DROP, "Couldn't load %s", name);
+	if ( !buf ) {
+		Com_Error( ERR_DROP, "%s: couldn't load %s", __func__, name );
+	}
+	if ( length < sizeof( dheader_t ) ) {
+		Com_Error( ERR_DROP, "%s: %s has truncated header", __func__, name );
 	}
 
-	last_checksum = LittleLong (Com_BlockChecksum (buf.i, length));
-	*checksum = last_checksum;
+	*checksum = cm.checksum = LittleLong( Com_BlockChecksum( buf, length ) );
 
-	header = *(dheader_t *)buf.i;
-	for (i=0 ; i<sizeof(dheader_t)/4 ; i++) {
-		((int *)&header)[i] = LittleLong ( ((int *)&header)[i]);
+	header = *(dheader_t *)buf;
+	for ( i = 0; i < sizeof( dheader_t ) / 4; i++ ) {
+		( (int32_t *)&header )[i] = LittleLong( ( (int32_t *)&header )[i] );
 	}
 
 	if ( header.version != BSP_VERSION ) {
-		Com_Error (ERR_DROP, "CM_LoadMap: %s has wrong version number (%i should be %i)"
-		, name, header.version, BSP_VERSION );
+		Com_Error( ERR_DROP, "%s: %s has wrong version number (%i should be %i)", __func__, name, header.version, BSP_VERSION );
 	}
 
-	cmod_base = (byte *)buf.i;
+	for ( i = 0; i < HEADER_LUMPS; i++ ) {
+		int32_t ofs = header.lumps[i].fileofs;
+		int32_t len = header.lumps[i].filelen;
+		if ( (uint32_t)ofs > MAX_QINT || (uint32_t)len > MAX_QINT || ofs + len > length || ofs + len <  0 ) {
+			Com_Error( ERR_DROP, "%s: %s has wrong lump[%i] size/offset", __func__, name, i );
+		}
+	}
+
+	cmod_base = (byte *)buf;
 
 	// load into heap
 	CMod_LoadShaders( &header.lumps[LUMP_SHADERS] );
@@ -716,7 +728,7 @@ void CM_LoadMap( const char *name, qboolean clientload, int *checksum ) {
 	CMod_CheckLeafBrushes();
 
 	// we are NOT freeing the file, because it is cached for the ref
-	FS_FreeFile( buf.v );
+	FS_FreeFile( buf );
 
 	CM_InitBoxHull();
 

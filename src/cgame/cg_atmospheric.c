@@ -61,7 +61,7 @@ If you have questions concerning this license or the applicable additional terms
 #define ATMOSPHERIC_SNOW_HEIGHT     3
 
 typedef enum {
-	ATM_NONE,
+	ATM_NONE = 0,
 	ATM_RAIN,
 	ATM_SNOW
 } atmFXType_t;
@@ -187,7 +187,7 @@ qboolean CG_AtmosphericKludge() {
 }
 
 typedef enum {
-	ACT_NOT,
+	ACT_NOT = 0,
 	ACT_FALLING
 } active_t;
 
@@ -357,7 +357,7 @@ static void CG_RainParticleRender( cg_atmosphericParticle_t *particle ) {
 	vec3_t forward, right;
 	polyVert_t verts[3];
 	vec2_t line;
-	float len, frac, dist;
+	float len, /*frac,*/ dist;
 	vec3_t start, finish;
 	float groundHeight;
 //	int			msec = trap_Milliseconds();
@@ -383,7 +383,7 @@ static void CG_RainParticleRender( cg_atmosphericParticle_t *particle ) {
 	if ( start[2] <= groundHeight ) {
 		// Stop snow going through surfaces.
 		len = particle->height - groundHeight + start[2];
-		frac = start[2];
+		//frac = start[2];
 		VectorMA( start, len - particle->height, particle->deltaNormalized, start );
 	}
 
@@ -549,7 +549,7 @@ static void CG_SnowParticleRender( cg_atmosphericParticle_t *particle ) {
 	vec3_t forward, right;
 	polyVert_t verts[3];
 	vec2_t line;
-	float len, frac, sinTumbling, cosTumbling, particleWidth, dist;
+	float len, /*frac,*/ sinTumbling, cosTumbling, particleWidth, dist;
 	vec3_t start, finish;
 	float groundHeight;
 //	int			msec = trap_Milliseconds();
@@ -578,7 +578,7 @@ static void CG_SnowParticleRender( cg_atmosphericParticle_t *particle ) {
 	if ( start[2] <= groundHeight ) {
 		// Stop snow going through surfaces.
 		len = particle->height - groundHeight + start[2];
-		frac = start[2];
+		//frac = start[2];
 		VectorMA( start, len - particle->height, particle->deltaNormalized, start );
 	}
 

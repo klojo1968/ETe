@@ -48,7 +48,7 @@ If you have questions concerning this license or the applicable additional terms
 #endif
 
 //bani
-#ifdef __GNUC__
+#if defined(__GNUC__) || defined(__clang__)
 #define _attribute( x ) __attribute__( x )
 #else
 #define _attribute( x )
@@ -2053,7 +2053,7 @@ void BG_AnimParseAnimScript( animModelInfo_t *modelInfo, animScriptData_t *scrip
 int BG_AnimScriptAnimation( playerState_t *ps, animModelInfo_t *modelInfo, scriptAnimMoveTypes_t movetype, qboolean isContinue );
 int BG_AnimScriptCannedAnimation( playerState_t *ps, animModelInfo_t *modelInfo );
 int BG_AnimScriptEvent( playerState_t *ps, animModelInfo_t *modelInfo, scriptAnimEventTypes_t event, qboolean isContinue, qboolean force );
-int BG_IndexForString( char *token, animStringItem_t *strings, qboolean allowFail );
+int BG_IndexForString( const char *token, animStringItem_t *strings, qboolean allowFail );
 int BG_PlayAnimName( playerState_t *ps, animModelInfo_t *animModelInfo, char *animName, animBodyPart_t bodyPart, qboolean setTimer, qboolean isContinue, qboolean force );
 void BG_ClearAnimTimer( playerState_t *ps, animBodyPart_t bodyPart );
 qboolean BG_ValidAnimScript( int clientNum );
@@ -2065,7 +2065,7 @@ void BG_SetConditionBitFlag( int client, int condition, int bitNumber );
 void BG_ClearConditionBitFlag( int client, int condition, int bitNumber );
 int BG_GetAnimScriptAnimation( int client, animModelInfo_t* animModelInfo, aistateEnum_t aistate, scriptAnimMoveTypes_t movetype );
 void BG_AnimUpdatePlayerStateConditions( pmove_t *pmove );
-animation_t *BG_AnimationForString( char *string, animModelInfo_t *animModelInfo );
+animation_t *BG_AnimationForString( const char *string, animModelInfo_t *animModelInfo );
 animation_t *BG_GetAnimationForIndex( animModelInfo_t* animModelInfo, int index );
 int BG_GetAnimScriptEvent( playerState_t *ps, scriptAnimEventTypes_t event );
 int PM_IdleAnimForWeapon( int weapon );
@@ -2417,5 +2417,7 @@ int PM_AltSwitchToForWeapon( int weapon );
 void PM_TraceLegs( trace_t * trace, float *legsOffset, vec3_t start, vec3_t end, trace_t * bodytrace, vec3_t viewangles, void( tracefunc ) ( trace_t * results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentMask ), int ignoreent, int tracemask );
 void PM_TraceAllLegs( trace_t *trace, float *legsOffset, vec3_t start, vec3_t end );
 void PM_TraceAll( trace_t *trace, vec3_t start, vec3_t end );
+
+void BG_CleanName( const char *in, char *out, int outSize, const char *blankString );
 
 #endif

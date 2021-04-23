@@ -646,7 +646,7 @@ static void G_AddBot( const char *name, int skill, const char *team, const char 
 	char            *botinfo;
 	gentity_t       *bot;
 	char            *key;
-	char            *s;
+	const char            *s;
 	char            *botname;
 //	char			*model;
 	char userinfo[MAX_INFO_STRING];
@@ -714,7 +714,7 @@ static void G_AddBot( const char *name, int skill, const char *team, const char 
 	// END Mad Doc - TDF
 
 	key = "wolfbot";
-	if ( !Q_stricmp( (char *)name, key ) ) {
+	if ( !Q_stricmp( name, key ) ) {
 		// read the botnames file, and pick a name that doesnt exist
 		fileHandle_t f;
 		int len, i, j, k;

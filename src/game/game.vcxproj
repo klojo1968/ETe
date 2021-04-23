@@ -40,6 +40,9 @@
   <PropertyGroup>
     <_ProjectFileVersion>15.0.26419.1</_ProjectFileVersion>
   </PropertyGroup>
+  <PropertyGroup>
+    <XPDeprecationWarning>false</XPDeprecationWarning>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>.\Debug\</OutDir>
     <IntDir>.\Debug\</IntDir>
@@ -147,23 +150,11 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\botai\ai_cmd.c" />
-    <ClCompile Include="..\botai\ai_dmgoal_mp.c" />
-    <ClCompile Include="..\botai\ai_dmnet_mp.c" />
-    <ClCompile Include="..\botai\ai_dmq3.c" />
-    <ClCompile Include="..\botai\ai_main.c" />
-    <ClCompile Include="..\botai\ai_script.c" />
-    <ClCompile Include="..\botai\ai_script_actions.c" />
-    <ClCompile Include="..\botai\ai_team.c" />
     <ClCompile Include="bg_animation.c" />
     <ClCompile Include="bg_animgroup.c" />
     <ClCompile Include="bg_campaign.c" />
     <ClCompile Include="bg_character.c" />
     <ClCompile Include="bg_classes.c" />
-    <ClCompile Include="bg_lib.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="bg_misc.c" />
     <ClCompile Include="bg_pmove.c" />
     <ClCompile Include="bg_slidemove.c" />
@@ -173,7 +164,6 @@
     <ClCompile Include="g_active.c" />
     <ClCompile Include="g_alarm.c" />
     <ClCompile Include="g_antilag.c" />
-    <ClCompile Include="g_bot.c" />
     <ClCompile Include="g_buddy_list.c" />
     <ClCompile Include="g_character.c" />
     <ClCompile Include="g_client.c" />
@@ -192,14 +182,12 @@
     <ClCompile Include="g_multiview.c" />
     <ClCompile Include="g_props.c" />
     <ClCompile Include="g_referee.c" />
-    <ClCompile Include="g_save.c" />
     <ClCompile Include="g_script.c" />
     <ClCompile Include="g_script_actions.c" />
     <ClCompile Include="g_session.c" />
     <ClCompile Include="g_spawn.c" />
     <ClCompile Include="g_stats.c" />
     <ClCompile Include="g_svcmds.c" />
-    <ClCompile Include="g_sv_entities.c" />
     <ClCompile Include="g_syscalls.c" />
     <ClCompile Include="g_systemmsg.c" />
     <ClCompile Include="g_target.c" />
@@ -209,39 +197,13 @@
     <ClCompile Include="g_utils.c" />
     <ClCompile Include="g_vote.c" />
     <ClCompile Include="g_weapon.c" />
-    <ClCompile Include="q_math.c" />
-    <ClCompile Include="q_shared.c" />
+    <ClCompile Include="..\qcommon\q_math.c" />
+    <ClCompile Include="..\qcommon\q_shared.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="game.def" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\botai\ai_botScriptTrigger.h" />
-    <ClInclude Include="..\botai\ai_botScriptTriggerX.h" />
-    <ClInclude Include="..\botai\ai_cmd.h" />
-    <ClInclude Include="..\botai\ai_distances.h" />
-    <ClInclude Include="..\botai\ai_dmgoal_mp.h" />
-    <ClInclude Include="..\botai\ai_dmgoal_sp.h" />
-    <ClInclude Include="..\botai\ai_dmnet_mp.h" />
-    <ClInclude Include="..\botai\ai_dmnet_sp.h" />
-    <ClInclude Include="..\botai\ai_dmq3.h" />
-    <ClInclude Include="..\botai\ai_main.h" />
-    <ClInclude Include="..\botai\ai_matrix.h" />
-    <ClInclude Include="..\botai\ai_team.h" />
-    <ClInclude Include="..\botai\ai_teamX.h" />
-    <ClInclude Include="..\botai\botai.h" />
-    <ClInclude Include="..\botai\chars.h" />
-    <ClInclude Include="..\botai\inv.h" />
-    <ClInclude Include="..\botai\match.h" />
-    <ClInclude Include="..\botai\syn.h" />
-    <ClInclude Include="be_aas.h" />
-    <ClInclude Include="be_ai_char.h" />
-    <ClInclude Include="be_ai_chat.h" />
-    <ClInclude Include="be_ai_gen.h" />
-    <ClInclude Include="be_ai_goal.h" />
-    <ClInclude Include="be_ai_move.h" />
-    <ClInclude Include="be_ai_weap.h" />
-    <ClInclude Include="be_ea.h" />
     <ClInclude Include="bg_classes.h" />
     <ClInclude Include="bg_local.h" />
     <ClInclude Include="bg_public.h" />
@@ -249,7 +211,7 @@
     <ClInclude Include="g_local.h" />
     <ClInclude Include="g_public.h" />
     <ClInclude Include="g_team.h" />
-    <ClInclude Include="q_shared.h" />
+    <ClInclude Include="..\qcommon\q_shared.h" />
     <ClInclude Include="surfaceflags.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

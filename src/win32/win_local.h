@@ -100,7 +100,7 @@ If you have questions concerning this license or the applicable additional terms
 #define T TEXT
 #ifdef UNICODE
 LPWSTR AtoW( const char *s );
-const char *WtoA( const LPWSTR s ); 
+const char *WtoA( const LPWSTR s );
 #else
 #define AtoW(S) (S)
 #define WtoA(S) (S)
@@ -150,7 +150,7 @@ typedef struct
 	RECT			winRect;
 	qboolean		winRectValid;
 
-	int	raw_mx;
+	int raw_mx;
 	int raw_my;
 
 	POINT mouse;
@@ -159,8 +159,8 @@ typedef struct
 
 extern WinVars_t	g_wv;
 
-void WIN_DisableHook( void  );
-void WIN_EnableHook( void  );
+void WIN_DisableHook( void );
+void WIN_EnableHook( void );
 
 void WIN_DisableAltTab( void );
 void WIN_EnableAltTab( void );

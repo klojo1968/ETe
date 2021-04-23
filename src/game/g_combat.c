@@ -35,22 +35,6 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "g_local.h"
 #include "../qcommon/q_shared.h"
-#include "../game/botlib.h"      //bot lib interface
-#include "../game/be_aas.h"
-#include "../game/be_ea.h"
-#include "../game/be_ai_gen.h"
-#include "../game/be_ai_goal.h"
-#include "../game/be_ai_move.h"
-#include "../botai/botai.h"          //bot ai interface
-#include "../botai/ai_main.h"
-#include "../botai/chars.h"
-#include "../botai/ai_team.h"
-#include "../botai/ai_dmq3.h"
-
-
-extern void BotRecordKill( int client, int enemy );
-extern void BotRecordPain( int client, int enemy, int mod );
-extern void BotRecordDeath( int client, int enemy );
 
 extern vec3_t muzzleTrace;
 
@@ -399,8 +383,6 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 
 	// RF, record this death in AAS system so that bots avoid areas which have high death rates
 	if ( !OnSameTeam( self, attacker ) ) {
-		BotRecordTeamDeath( self->s.number );
-
 		self->isProp = qfalse;  // were we teamkilled or not?
 	} else {
 		self->isProp = qtrue;
@@ -494,11 +476,6 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 		}
 
 		G_LogPrintf( "Kill: %i %i %i: %s killed %s by %s\n", killer, self->s.number, meansOfDeath, killerName, self->client->pers.netname, obit );
-	}
-
-	// RF, record bot kills
-	if ( attacker->r.svFlags & SVF_BOT ) {
-		BotRecordKill( attacker->s.number, self->s.number );
 	}
 
 	// broadcast the death event to everyone
@@ -1068,7 +1045,6 @@ dflags		these flags are used to control how T_Damage works
 void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,  vec3_t dir, vec3_t point, int damage, int dflags, int mod ) {
 	gclient_t   *client;
 	int take;
-	int save;
 	int knockback;
 	qboolean headShot;
 	qboolean wasAlive;
@@ -1388,12 +1364,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,  vec3
 		if ( targ != attacker && OnSameTeam( targ, attacker )  ) {
 			if ( ( g_gamestate.integer != GS_PLAYING && match_warmupDamage.integer == 1 ) ) {
 				return;
-			} else if ( !g_friendlyFire.integer )     {
-				// record "fake" pain - although the bot is not really hurt, his feeling has been hurt :-)
-				// well at least he wants to shout "watch your fire".
-				if ( targ->s.number < level.maxclients && targ->r.svFlags & SVF_BOT ) {
-					BotRecordPain( targ->s.number, attacker->s.number, mod );
-				}
+			} else if ( !g_friendlyFire.integer ) {
 				return;
 			}
 		}
@@ -1412,7 +1383,6 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,  vec3
 		damage = 1;
 	}
 	take = damage;
-	save = 0;
 
 	// adrenaline junkie!
 	if ( targ->client && targ->client->ps.powerups[PW_ADRENALINE] ) {
@@ -1660,20 +1630,10 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,  vec3
 
 				// RF, entity scripting
 				if ( targ->health <= 0 ) {   // might have revived itself in death function
-					if ( targ->r.svFlags & SVF_BOT ) {
-						// See if this is the first kill of this bot
-						if ( wasAlive ) {
-							Bot_ScriptEvent( targ->s.number, "death", "" );
-						}
-					} else if (  ( targ->s.eType != ET_CONSTRUCTIBLE && targ->s.eType != ET_EXPLOSIVE ) ||
+					if (  ( targ->s.eType != ET_CONSTRUCTIBLE && targ->s.eType != ET_EXPLOSIVE ) ||
 								 ( targ->s.eType == ET_CONSTRUCTIBLE && !targ->desstages ) ) { // call manually if using desstages
 						G_Script_ScriptEvent( targ, "death", "" );
 					}
-				}
-
-				// RF, record bot death
-				if ( targ->s.number < level.maxclients && targ->r.svFlags & SVF_BOT ) {
-					BotRecordDeath( targ->s.number, attacker->s.number );
 				}
 			}
 
@@ -1695,14 +1655,6 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,  vec3
 
 		// RF, entity scripting
 		G_Script_ScriptEvent( targ, "pain", va( "%d %d", targ->health, targ->health + take ) );
-		if ( targ->s.number < MAX_CLIENTS && ( targ->r.svFlags & SVF_BOT ) ) {
-			Bot_ScriptEvent( targ->s.number, "pain", va( "%d %d", targ->health, targ->health + take ) );
-		}
-
-		// RF, record bot pain
-		if ( targ->s.number < level.maxclients && targ->r.svFlags & SVF_BOT ) {
-			BotRecordPain( targ->s.number, attacker->s.number, mod );
-		}
 
 		// Ridah, this needs to be done last, incase the health is altered in one of the event calls
 		if ( targ->client ) {

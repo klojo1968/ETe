@@ -38,7 +38,7 @@ If you have questions concerning this license or the applicable additional terms
 */
 
 #include "../qcommon/q_shared.h"
-#include "../renderer/tr_types.h"
+#include "../renderercommon/tr_types.h"
 #include "../game/bg_public.h"
 #include "cg_public.h"
 #include "../ui/ui_shared.h"
@@ -1885,7 +1885,7 @@ typedef struct {
 
 	int cursorX;
 	int cursorY;
-	qboolean eventHandling;
+	int eventHandling;
 	qboolean mouseCaptured;
 	qboolean sizingHud;
 	void *capturedItem;
@@ -1962,7 +1962,7 @@ typedef struct {
 	int aReinfOffset[TEAM_NUM_TEAMS];                   // Team reinforcement offsets
 	int cursorUpdate;                                   // Timeout for mouse pointer view
 	fileHandle_t dumpStatsFile;                         // File to dump stats
-	char*               dumpStatsFileName;              // Name of file to dump stats
+	const char*               dumpStatsFileName;              // Name of file to dump stats
 	int dumpStatsTime;                                  // Next stats command that comes back will be written to a logfile
 	int game_versioninfo;                               // game base version
 	gameStats_t gamestats;
@@ -2034,6 +2034,13 @@ typedef struct {
 	oidInfo_t oidInfo[MAX_OID_TRIGGERS];
 
 	qboolean initing;
+
+	qboolean		pmove_fixed;
+	int				pmove_msec;
+
+#ifdef ALLOW_GSYNC
+	qboolean		synchronousClients;
+#endif
 } cgs_t;
 
 //==============================================================================
@@ -2111,9 +2118,6 @@ extern vmCvar_t cg_thirdPersonAngle;
 extern vmCvar_t cg_thirdPerson;
 extern vmCvar_t cg_stereoSeparation;
 extern vmCvar_t cg_lagometer;
-#ifdef ALLOW_GSYNC
-extern vmCvar_t cg_synchronousClients;
-#endif // ALLOW_GSYNC
 extern vmCvar_t cg_teamChatTime;
 extern vmCvar_t cg_teamChatHeight;
 extern vmCvar_t cg_stats;
@@ -2131,8 +2135,6 @@ extern vmCvar_t cg_noVoiceText;                     // NERVE - SMF
 extern vmCvar_t cg_enableBreath;
 extern vmCvar_t cg_autoactivate;
 extern vmCvar_t cg_smoothClients;
-extern vmCvar_t pmove_fixed;
-extern vmCvar_t pmove_msec;
 
 extern vmCvar_t cg_cameraOrbit;
 extern vmCvar_t cg_cameraOrbitDelay;
@@ -2179,7 +2181,7 @@ extern vmCvar_t cg_descriptiveText;
 
 extern vmCvar_t cg_antilag;
 
-extern vmCvar_t developer;
+extern vmCvar_t cg_developer;
 
 // OSP
 extern vmCvar_t authLevel;
@@ -2241,13 +2243,15 @@ extern vmCvar_t cg_fastSolids;
 extern vmCvar_t cg_instanttapout;
 
 // bani - demo recording cvars
-extern vmCvar_t cl_demorecording;
-extern vmCvar_t cl_demofilename;
-extern vmCvar_t cl_demooffset;
-extern vmCvar_t cl_waverecording;
-extern vmCvar_t cl_wavefilename;
-extern vmCvar_t cl_waveoffset;
+extern vmCvar_t cg_demorecording;
+extern vmCvar_t cg_demofilename;
+extern vmCvar_t cg_demooffset;
+extern vmCvar_t cg_waverecording;
+extern vmCvar_t cg_wavefilename;
+extern vmCvar_t cg_waveoffset;
 extern vmCvar_t cg_recording_statusline;
+
+extern vmCvar_t cg_fovAdjust;
 
 //
 // cg_main.c
@@ -2258,14 +2262,14 @@ const char *CG_Argv( int arg );
 
 float CG_Cvar_Get( const char *cvar );
 
-char *CG_generateFilename( void );
-int CG_findClientNum( char *s );
-void CG_printConsoleString( char *str );
+const char *CG_generateFilename( void );
+int CG_findClientNum( const char *s );
+void CG_printConsoleString( const char *str );
 
 void CG_LoadObjectiveData( void );
 
 void QDECL CG_Printf( const char *msg, ... );
-void QDECL CG_Error( const char *msg, ... );
+void NORETURN QDECL CG_Error( const char *msg, ... );
 
 void CG_StartMusic( void );
 void CG_QueueMusic( void );
@@ -2391,7 +2395,7 @@ int CG_Text_Height_Ext( const char *text, float scale, int limit, fontInfo_t* fo
 int CG_Text_Height( const char *text, float scale, int limit );
 float CG_GetValue( int ownerDraw, int type ); // 'type' is relative or absolute (fractional-'0.5' or absolute- '50' health)
 qboolean CG_OwnerDrawVisible( int flags );
-void CG_RunMenuScript( char **args );
+void CG_RunMenuScript( const char **args );
 void CG_GetTeamColor( vec4_t *color );
 void CG_Draw3DModel( float x, float y, float w, float h, qhandle_t model, qhandle_t skin, vec3_t origin, vec3_t angles );
 void CG_Text_PaintChar_Ext( float x, float y, float w, float h, float scalex, float scaley, float s, float t, float s2, float t2, qhandle_t hShader );
@@ -2776,6 +2780,7 @@ void CG_toggleSwing_f( void );
 //
 void CG_ExecuteNewServerCommands( int latestSequence );
 void CG_ParseServerinfo( void );
+void CG_ParseSysteminfo( void );
 void CG_ParseWolfinfo( void );          // NERVE - SMF
 void CG_ParseSpawns( void );
 void CG_ParseServerVersionInfo( const char *pszVersionInfo );
@@ -2789,9 +2794,9 @@ void CG_AddToNotify( const char *str );
 const char* CG_LocalizeServerCommand( const char *buf );
 void CG_wstatsParse_cmd( void );
 void CG_wtopshotsParse_cmd( qboolean doBest );
-void CG_parseWeaponStats_cmd( void( txt_dump ) ( char * ) );
-void CG_parseBestShotsStats_cmd( qboolean doTop, void( txt_dump ) ( char * ) );
-void CG_parseTopShotsStats_cmd( qboolean doTop, void( txt_dump ) ( char * ) );
+void CG_parseWeaponStats_cmd( void( txt_dump ) ( const char * ) );
+void CG_parseBestShotsStats_cmd( qboolean doTop, void( txt_dump ) ( const char * ) );
+void CG_parseTopShotsStats_cmd( qboolean doTop, void( txt_dump ) ( const char * ) );
 void CG_scores_cmd( void );
 
 //
@@ -2820,7 +2825,7 @@ void trap_PumpEventLoop( void );
 void        trap_Print( const char *fmt );
 
 // abort the game
-void        trap_Error( const char *fmt );
+void        NORETURN trap_Error( const char *fmt );
 
 // milliseconds should only be used for performance tuning, never
 // for anything game related.  Get time from the CG_DrawActiveFrame parameter
@@ -2858,6 +2863,8 @@ void        trap_SendConsoleCommand( const char *text );
 // register a command name so the console can perform command completion.
 // FIXME: replace this with a normal console command "defineCommand"?
 void        trap_AddCommand( const char *cmdName );
+
+void    	trap_RemoveCommand( const char *cmdName );
 
 // send a string to the server over the network
 void        trap_SendClientCommand( const char *s );
@@ -3241,7 +3248,7 @@ void CG_createWtopshotsMsgWindow( void );
 void CG_createMOTDWindow( void );
 void CG_cursorUpdate( void );
 void CG_initStrings( void );
-void CG_printWindow( char *str );
+void CG_printWindow( const char *str );
 void CG_removeStrings( cg_window_t *w );
 cg_window_t *CG_windowAlloc( int fx, int startupLength );
 void CG_windowDraw( void );
@@ -3499,3 +3506,14 @@ void CG_Fireteams_Setup( void );
 
 void CG_Fireteams_MenuText_Draw( panel_button_t* button );
 void CG_Fireteams_MenuTitleText_Draw( panel_button_t* button );
+
+// extension interface
+extern  qboolean intShaderTime;
+extern  qboolean linearLight;
+
+qboolean trap_GetValue( char *value, int valueSize, const char *key );
+void trap_R_AddRefEntityToScene2( const refEntity_t *re );
+void trap_R_AddLinearLightToScene( const vec3_t start, const vec3_t end, float intensity, float r, float g, float b );
+extern int dll_com_trapGetValue;
+extern int dll_trap_R_AddRefEntityToScene2;
+extern int dll_trap_R_AddLinearLightToScene;

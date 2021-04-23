@@ -99,38 +99,34 @@ qboolean    G_SpawnVector2DExt( const char *key, const char *defaultString, floa
 typedef enum {
 	F_INT,
 	F_FLOAT,
-	F_LSTRING,          // string on disk, pointer in memory, TAG_LEVEL
-	F_GSTRING,          // string on disk, pointer in memory, TAG_GAME
+	F_STRING,          // string on disk, pointer in memory, TAG_LEVEL
 	F_VECTOR,
 	F_ANGLEHACK,
-	F_ENTITY,           // index on disk, pointer in memory
-	F_ITEM,             // index on disk, pointer in memory
-	F_CLIENT,           // index on disk, pointer in memory
 	F_IGNORE
 } fieldtype_t;
 
 typedef struct
 {
-	char    *name;
-	int ofs;
+	const char *name;
+	size_t ofs;
 	fieldtype_t type;
 	int flags;
 } field_t;
 
 field_t fields[] = {
-	{"classname",    FOFS( classname ),    F_LSTRING},
+	{"classname",    FOFS( classname ),    F_STRING},
 	{"origin",       FOFS( s.origin ),     F_VECTOR},
-	{"model",        FOFS( model ),        F_LSTRING},
-	{"model2",       FOFS( model2 ),       F_LSTRING},
+	{"model",        FOFS( model ),        F_STRING},
+	{"model2",       FOFS( model2 ),       F_STRING},
 	{"spawnflags",   FOFS( spawnflags ),   F_INT},
 	{"speed",        FOFS( speed ),        F_FLOAT},
 	{"closespeed",   FOFS( closespeed ),   F_FLOAT},   //----(SA)	added
-	{"target",       FOFS( target ),       F_LSTRING},
-	{"targetname",   FOFS( targetname ),   F_LSTRING},
-	{"message",      FOFS( message ),      F_LSTRING},
-	{"popup",        FOFS( message ),      F_LSTRING}, // (SA) mutually exclusive from 'message', but makes the ent more logical for the level designer
-	{"book",     FOFS( message ),      F_LSTRING}, // (SA) mutually exclusive from 'message', but makes the ent more logical for the level designer
-	{"team",     FOFS( team ),         F_LSTRING},
+	{"target",       FOFS( target ),       F_STRING},
+	{"targetname",   FOFS( targetname ),   F_STRING},
+	{"message",      FOFS( message ),      F_STRING},
+	{"popup",        FOFS( message ),      F_STRING}, // (SA) mutually exclusive from 'message', but makes the ent more logical for the level designer
+	{"book",     FOFS( message ),      F_STRING}, // (SA) mutually exclusive from 'message', but makes the ent more logical for the level designer
+	{"team",     FOFS( team ),         F_STRING},
 	{"wait",     FOFS( wait ),         F_FLOAT},
 	{"random",       FOFS( random ),       F_FLOAT},
 	{"count",        FOFS( count ),        F_INT},
@@ -147,18 +143,18 @@ field_t fields[] = {
 	{"time",     FOFS( speed ),        F_FLOAT},
 
 	//----(SA) additional ai field
-	{"skin",     FOFS( aiSkin ),       F_LSTRING},
+	{"skin",     FOFS( aiSkin ),       F_STRING},
 
 	//----(SA) done
 
 	// (SA) dlight lightstyles (made all these unique variables for testing)
 	{"_color",       FOFS( dl_color ),     F_VECTOR},      // color of the light	(the underscore is inserted by the color picker in QER)
 	{"color",        FOFS( dl_color ),     F_VECTOR},      // color of the light
-	{"stylestring",  FOFS( dl_stylestring ), F_LSTRING},   // user defined stylestring "fffndlsfaaaaaa" for example
+	{"stylestring",  FOFS( dl_stylestring ), F_STRING},   // user defined stylestring "fffndlsfaaaaaa" for example
 	// done
 
 	//----(SA)
-	{"shader",       FOFS( dl_shader ), F_LSTRING},    // shader to use for a target_effect or dlight
+	{"shader",       FOFS( dl_shader ), F_STRING},    // shader to use for a target_effect or dlight
 
 	// (SA) for target_unlock
 	{"key",          FOFS( key ),      F_INT},
@@ -183,26 +179,26 @@ field_t fields[] = {
 	{"shard", FOFS( count ), F_INT},
 
 	// Rafael
-	{"spawnitem",        FOFS( spawnitem ),            F_LSTRING},
+	{"spawnitem",        FOFS( spawnitem ),            F_STRING},
 
-	{"track",            FOFS( track ),                F_LSTRING},
+	{"track",            FOFS( track ),                F_STRING},
 
-	{"scriptName",       FOFS( scriptName ),           F_LSTRING},
+	{"scriptName",       FOFS( scriptName ),           F_STRING},
 
-	{"shortname",        FOFS( message ),              F_LSTRING},
-	{"constages",        FOFS( constages ),            F_LSTRING},
-	{"desstages",        FOFS( desstages ),            F_LSTRING},
+	{"shortname",        FOFS( message ),              F_STRING},
+	{"constages",        FOFS( constages ),            F_STRING},
+	{"desstages",        FOFS( desstages ),            F_STRING},
 	{"partofstage",      FOFS( partofstage ),          F_INT},
-	{"override",     FOFS( spawnitem ),            F_LSTRING},
+	{"override",     FOFS( spawnitem ),            F_STRING},
 
-	{"damageparent", FOFS( damageparent ),         F_LSTRING},
+	{"damageparent", FOFS( damageparent ),         F_STRING},
 
 	{NULL}
 };
 
 
 typedef struct {
-	char    *name;
+	const char    *name;
 	void ( *spawn )( gentity_t *ent );
 } spawn_t;
 
@@ -445,7 +441,7 @@ void SP_trigger_deathCheck( gentity_t *ent );
 void SP_misc_spawner( gentity_t *ent );
 void SP_props_decor_Scale( gentity_t *ent );
 
-void SP_bot_landminespot_spot( gentity_t *ent );
+/*void SP_bot_landminespot_spot( gentity_t *ent );
 void SP_bot_sniper_spot( gentity_t *ent );
 void SP_bot_attractor( gentity_t *ent );
 void SP_bot_seek_cover_spot( gentity_t *ent );
@@ -453,7 +449,7 @@ void SP_bot_seek_cover_sequence( gentity_t *ent );
 void SP_bot_axis_seek_cover_spot( gentity_t *ent );
 void SP_bot_jump_source( gentity_t *ent );
 void SP_bot_jump_dest( gentity_t *ent );
-void SP_bot_landmine_area( gentity_t *ent );
+void SP_bot_landmine_area( gentity_t *ent );*/
 
 void SP_ai_marker( gentity_t *ent );
 
@@ -667,7 +663,7 @@ spawn_t spawns[] = {
 	{"script_mover", SP_script_mover},
 	{"script_multiplayer", SP_script_multiplayer},
 
-	{"bot_landminespot_spot", SP_bot_landminespot_spot},
+	/*{"bot_landminespot_spot", SP_bot_landminespot_spot},
 	{"bot_sniper_spot", SP_bot_sniper_spot},
 	{"bot_attractor", SP_bot_attractor},
 	{"bot_seek_cover_spot", SP_bot_seek_cover_spot},
@@ -676,7 +672,7 @@ spawn_t spawns[] = {
 	{"bot_jump_source", SP_bot_jump_source},
 	{"bot_jump_dest", SP_bot_jump_dest},
 	{"ai_marker", SP_ai_marker},
-	{"bot_landmine_area", SP_bot_landmine_area},
+	{"bot_landmine_area", SP_bot_landmine_area},*/
 
 	{"func_constructible",   SP_func_constructible},
 	{"func_brushmodel",      SP_func_brushmodel},
@@ -798,7 +794,7 @@ void G_ParseField( const char *key, const char *value, gentity_t *ent ) {
 			b = (byte *)ent;
 
 			switch ( f->type ) {
-			case F_LSTRING:
+			case F_STRING:
 				*( char ** )( b + f->ofs ) = G_NewString( value );
 				break;
 			case F_VECTOR:

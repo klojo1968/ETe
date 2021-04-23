@@ -175,7 +175,7 @@ static void CG_Obituary( entityState_t *ent ) {
 
 	// check for kill messages from the current clientNum
 	if ( attacker == cg.snap->ps.clientNum ) {
-		char    *s;
+		const char    *s;
 
 		if ( ci->team == ca->team ) {
 			if ( mod == MOD_SWAP_PLACES ) {
@@ -504,14 +504,6 @@ CG_PainEvent
 Also called by playerstate transition
 ================
 */
-typedef struct {
-	char *tag;
-	int refEntOfs;
-	int anim;
-} painAnimForTag_t;
-
-#define PEFOFS( x ) ( (int)&( ( (playerEntity_t *)0 )->x ) )
-
 void CG_PainEvent( centity_t *cent, int health, qboolean crouching ) {
 	char    *snd;
 
@@ -1303,14 +1295,14 @@ void CG_Effect( centity_t *cent, vec3_t origin, vec3_t dir ) {
 	localEntity_t   *le;
 	refEntity_t     *re;
 //	int				howmany;
-	int mass;
+	//int mass;
 //	int				large, small;
 	vec4_t projection, color;
 
 
 	VectorSet( dir, 0, 0, 1 );    // straight up.
 
-	mass = cent->currentState.density;
+	//mass = cent->currentState.density;
 
 //		1 large per 100, 1 small per 24
 //	large	= (int)(mass / 100);
@@ -1577,9 +1569,9 @@ void CG_Shard( centity_t *cent, vec3_t origin, vec3_t dir ) {
 void CG_ShardJunk( centity_t *cent, vec3_t origin, vec3_t dir ) {
 	localEntity_t   *le;
 	refEntity_t     *re;
-	int type;
+	//int type;
 
-	type = cent->currentState.density;
+	//type = cent->currentState.density;
 
 	le = CG_AllocLocalEntity();
 	re = &le->refEntity;
@@ -1629,9 +1621,9 @@ void CG_ShardJunk( centity_t *cent, vec3_t origin, vec3_t dir ) {
 void CG_Debris( centity_t *cent, vec3_t origin, vec3_t dir ) {
 	localEntity_t   *le;
 	refEntity_t     *re;
-	int type;
+	//int type;
 
-	type = cent->currentState.density;
+	//type = cent->currentState.density;
 
 	le = CG_AllocLocalEntity();
 	re = &le->refEntity;
@@ -1929,7 +1921,7 @@ void CG_EntityEvent( centity_t *cent, vec3_t position ) {
 			if ( cg.demoPlayback || ( cg.snap->ps.pm_flags & PMF_FOLLOW ) ||
 				 cg_nopredict.integer
 #ifdef ALLOW_GSYNC
-				 || cg_synchronousClients.integer
+				 || cgs.synchronousClients
 #endif // ALLOW_GSYNC
 				 ) {
 				break;
@@ -2741,7 +2733,7 @@ void CG_EntityEvent( centity_t *cent, vec3_t position ) {
 		}
 
 		len = 1.0f - ( len / (float)cent->currentState.onFireStart );
-		len = min( 1.f, len );
+		len = MIN( 1.f, len );
 
 		CG_StartShakeCamera( len );
 	}

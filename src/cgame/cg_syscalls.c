@@ -30,26 +30,17 @@ If you have questions concerning this license or the applicable additional terms
 // cg_syscalls.asm is included instead when building a qvm
 #include "cg_local.h"
 
-static int ( QDECL * syscall )( int arg, ... ) = ( int ( QDECL * )( int, ... ) ) - 1;
+static dllSyscall_t syscall = (dllSyscall_t)-1;
 
-#if __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
-void dllEntry( int ( QDECL  *syscallptr )( int arg,... ) ) {
+Q_EXPORT void dllEntry( dllSyscall_t syscallptr ) {
 	syscall = syscallptr;
 }
-#if __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
 
-/*int PASSFLOAT( float x ) {
-	float	floatTemp;
-	floatTemp = x;
-	return *(int *)&floatTemp;
-}*/
-
-
-#define PASSFLOAT( x ) ( *(int*)&x )
+int PASSFLOAT( float x ) {
+	floatint_t fi;
+	fi.f = x;
+	return fi.i;
+}
 
 void trap_PumpEventLoop( void ) {
 	if ( !cgs.initing ) {
@@ -63,8 +54,9 @@ void    trap_Print( const char *fmt ) {
 	syscall( CG_PRINT, fmt );
 }
 
-void    trap_Error( const char *fmt ) {
+void   NORETURN trap_Error( const char *fmt ) {
 	syscall( CG_ERROR, fmt );
+	exit( 1 );
 }
 
 int     trap_Milliseconds( void ) {
@@ -133,6 +125,10 @@ void    trap_SendConsoleCommand( const char *text ) {
 
 void    trap_AddCommand( const char *cmdName ) {
 	syscall( CG_ADDCOMMAND, cmdName );
+}
+
+void    trap_RemoveCommand( const char *cmdName ) {
+	syscall( CG_REMOVECOMMAND, cmdName );
 }
 
 void    trap_SendClientCommand( const char *s ) {
@@ -723,7 +719,7 @@ void trap_TranslateString( const char *string, char *buf ) {
 // Media register functions
 #ifdef _DEBUG
 #define DEBUG_REGISTERPROFILE_INIT int dbgTime = trap_Milliseconds();
-#define DEBUG_REGISTERPROFILE_EXEC( f,n ) if ( developer.integer ) {CG_Printf( "%s : loaded %s in %i msec\n", f, n, trap_Milliseconds() - dbgTime );}
+#define DEBUG_REGISTERPROFILE_EXEC( f,n ) if ( cg_developer.integer ) {CG_Printf( "%s : loaded %s in %i msec\n", f, n, trap_Milliseconds() - dbgTime );}
 sfxHandle_t trap_S_RegisterSound( const char *sample, qboolean compressed ) {
 	sfxHandle_t snd;
 	DEBUG_REGISTERPROFILE_INIT
@@ -889,3 +885,16 @@ void trap_R_Finish( void ) {
 	syscall( CG_R_FINISH );
 }
 
+// extension interface
+
+qboolean trap_GetValue( char *value, int valueSize, const char *key ) {
+	return syscall( dll_com_trapGetValue, value, valueSize, key );
+}
+
+void trap_R_AddRefEntityToScene2( const refEntity_t *re ) {
+	syscall( dll_trap_R_AddRefEntityToScene2, re );
+}
+
+void trap_R_AddLinearLightToScene( const vec3_t start, const vec3_t end, float intensity, float r, float g, float b ) {
+	syscall( dll_trap_R_AddLinearLightToScene, start, end, intensity, r, g, b );
+}

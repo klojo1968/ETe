@@ -38,7 +38,8 @@ If you have questions concerning this license or the applicable additional terms
 // these are the functions exported by the refresh module
 //
 typedef enum {
-	REF_KEEP_CONTEXT,	// don't destroy window or context
+	REF_KEEP_CONTEXT, // don't destroy window and context
+	REF_KEEP_WINDOW,  // destroy context, keep window
 	REF_DESTROY_WINDOW,
 	REF_UNLOAD_DLL
 } refShutdownCode_t;

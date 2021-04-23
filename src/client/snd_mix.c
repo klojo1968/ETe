@@ -296,7 +296,7 @@ void S_TransferStereo16( unsigned long *pbuf, int endtime )
 		else
 		if ( CPU_Flags & CPU_MMX )
 			S_WriteLinearBlastStereo16_MMX();
-		else 
+		else
 #endif
 #if idx64 && defined (_MSC_VER)
 		S_WriteLinearBlastStereo16_SSE_x64( snd_p, snd_out, snd_linear_count );
@@ -699,7 +699,7 @@ void S_PaintChannels( int endtime ) {
 	}
 
 	//Com_Printf ("%i to %i\n", s_paintedtime, endtime);
-	while ( s_paintedtime < endtime ) {
+	while ( endtime - s_paintedtime > 0 ) {
 		// if paintbuffer is smaller than DMA buffer
 		// we may need to fill it multiple times
 		end = endtime;
@@ -708,13 +708,13 @@ void S_PaintChannels( int endtime ) {
 		}
 
 		// clear the paint buffer and mix any raw samples...
-		Com_Memset(paintbuffer, 0, sizeof (paintbuffer));
+		Com_Memset( paintbuffer, 0, sizeof( paintbuffer ) );
 		for (stream = 0; stream < MAX_RAW_STREAMS; stream++) {
-			if ( s_rawend[stream] >= s_paintedtime ) {
+			if ( s_rawend[stream] - s_paintedtime >= 0 ) {
 				// copy from the streaming sound source
 				const portable_samplepair_t *rawsamples = s_rawsamples[stream];
 				const int stop = (end < s_rawend[stream]) ? end : s_rawend[stream];
-				for ( i = s_paintedtime ; i < stop ; i++ ) {
+				for ( i = s_paintedtime; i < stop; i++ ) {
 					const int s = i&(MAX_RAW_SAMPLES-1);
 					paintbuffer[i-s_paintedtime].left += rawsamples[s].left;
 					paintbuffer[i-s_paintedtime].right += rawsamples[s].right;
@@ -724,7 +724,7 @@ void S_PaintChannels( int endtime ) {
 
 		// paint in the channels.
 		ch = s_channels;
-		for ( i = 0; i < MAX_CHANNELS ; i++, ch++ ) {		
+		for ( i = 0; i < MAX_CHANNELS ; i++, ch++ ) {
 			if ( !ch->thesfx || (!ch->leftvol && !ch->rightvol) ) {
 				continue;
 			}
@@ -757,7 +757,7 @@ void S_PaintChannels( int endtime ) {
 
 		// paint in the looped channels.
 		ch = loop_channels;
-		for ( i = 0; i < numLoopChannels ; i++, ch++ ) {		
+		for ( i = 0; i < numLoopChannels ; i++, ch++ ) {
 			if ( !ch->thesfx || (!ch->leftvol && !ch->rightvol )) {
 				continue;
 			}
@@ -791,7 +791,7 @@ void S_PaintChannels( int endtime ) {
 					}
 					ltime += count;
 				}
-			} while ( ltime < end);
+			} while ( ltime - end < 0 );
 		}
 
 		// transfer out according to DMA format

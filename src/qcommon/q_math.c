@@ -1142,6 +1142,48 @@ int Q_isnan( float x )
 
 /*
 ================
+Q_isfinite
+================
+*/
+static int Q_isfinite( float f )
+{
+	floatint_t fi;
+	fi.f = f;
+
+	if ( fi.u == 0xFF800000 || fi.u == 0x7F800000 )
+		return 0; // -INF or +INF
+
+	fi.u = 0x7F800000 - (fi.u & 0x7FFFFFFF);
+	if ( (int)( fi.u >> 31 ) )
+		return 0; // -NAN or +NAN
+
+	return 1;
+}
+
+
+/*
+================
+Q_atof
+================
+*/
+float Q_atof( const char *str )
+{
+	float f;
+
+	f = atof( str );
+
+	// modern C11-like implementations of atof() may return INF or NAN
+	// which breaks all FP code where such values getting passed
+	// and effectively corrupts range checks for cvars as well
+	if ( !Q_isfinite( f ) )
+		return 0.0f;
+
+	return f;
+}
+
+
+/*
+================
 Q_log2f
 ================
 */

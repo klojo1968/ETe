@@ -555,7 +555,7 @@ static int WM_TeamScoreboard( int x, int y, team_t team, float fade, int maxrows
 
 	// draw header
 	if ( cg_gameType.integer == GT_WOLF_LMS ) {
-		char *s;
+		const char *s;
 		if ( team == TEAM_AXIS ) {
 			s = va( "%s [%d] (%d %s)", CG_TranslateString( "AXIS" ), cg.teamScores[0], cg.teamPlayers[team], CG_TranslateString( "PLAYERS" ) );
 			s = va( "%s ^3%s", s, cg.teamFirstBlood == TEAM_AXIS ? CG_TranslateString( "FIRST BLOOD" ) : "" );

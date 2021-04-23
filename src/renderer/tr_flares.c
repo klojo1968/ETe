@@ -494,6 +494,10 @@ void RB_RenderFlares (void) {
 		return;
 	}
 
+	if ( backEnd.isHyperspace ) {
+		return;
+	}
+
 	// we can't read from multisampled renderbuffer storage
 	if ( blitMSfbo ) {
 		FBO_BlitMS( qtrue );

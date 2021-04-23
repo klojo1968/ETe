@@ -143,7 +143,7 @@ void Menu_ShowItemByName( menuDef_t *menu, const char *p, qboolean bShow );
 // TTimo
 static char translated_yes[4], translated_no[4];
 
-typedef struct {
+/*typedef struct {
 	const char  *name;
 	int items;
 } playerType_t;
@@ -156,7 +156,7 @@ static playerType_t playerTypes[] = {
 	{ "player_window_covertops", PT_KNIFE | PT_PISTOL | PT_GRENADES }
 };
 
-int numPlayerTypes = sizeof( playerTypes ) / sizeof( playerTypes[0] );
+int numPlayerTypes = sizeof( playerTypes ) / sizeof( playerTypes[0] );*/
 
 /*typedef struct {
 	int			weapindex;
@@ -266,14 +266,16 @@ void _UI_MouseEvent( int dx, int dy );
 void _UI_Refresh( int realtime );
 qboolean _UI_IsFullscreen( void );
 
-#if __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
-int vmMain( int command, int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11  ) {
-#if __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
+qboolean intShaderTime = qfalse;
+qboolean linearLight = qfalse;
+qboolean removeCommand = qfalse;
 
+int dll_com_trapGetValue;
+int dll_trap_R_AddRefEntityToScene2;
+int dll_trap_R_AddLinearLightToScene;
+int dll_trap_RemoveCommand;
+
+Q_EXPORT intptr_t vmMain( int command, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6 ) {
 	switch ( command ) {
 	case UI_GETAPIVERSION:
 		return UI_API_VERSION;
@@ -1307,7 +1309,7 @@ qboolean Load_Menu( int handle ) {
 			char out[256];
 //			char filename[256];
 
-			COM_StripFilename( token.string, out );
+			COM_StripFilename( token.string, out, sizeof(out) );
 
 			filename = COM_SkipPath( token.string );
 
@@ -1415,7 +1417,7 @@ static const char *handicapValues[] = {"None","95","90","85","80","75","70","65"
 static void UI_DrawHandicap( rectDef_t *rect, float scale, vec4_t color, int textStyle ) {
 	int i, h;
 
-	h = Com_Clamp( 5, 100, trap_Cvar_VariableValue( "handicap" ) );
+	h = Com_ClampInt( 5, 100, trap_Cvar_VariableValue( "handicap" ) );
 	i = 20 - h / 5;
 
 	Text_Paint( rect->x, rect->y, scale, color, handicapValues[i], 0, 0, textStyle );
@@ -2699,7 +2701,7 @@ static int UI_OwnerDrawWidth( int ownerDraw, float scale ) {
 
 	switch ( ownerDraw ) {
 	case UI_HANDICAP:
-		h = Com_Clamp( 5, 100, trap_Cvar_VariableValue( "handicap" ) );
+		h = Com_ClampInt( 5, 100, trap_Cvar_VariableValue( "handicap" ) );
 		i = 20 - h / 5;
 		s = handicapValues[i];
 		break;
@@ -3425,7 +3427,7 @@ qboolean UI_OwnerDrawVisible( int flags ) {
 static qboolean UI_Handicap_HandleKey( int flags, float *special, int key ) {
 	if ( key == K_MOUSE1 || key == K_MOUSE2 || key == K_ENTER || key == K_KP_ENTER ) {
 		int h;
-		h = Com_Clamp( 5, 100, trap_Cvar_VariableValue( "handicap" ) );
+		h = Com_ClampInt( 5, 100, trap_Cvar_VariableValue( "handicap" ) );
 		if ( key == K_MOUSE2 ) {
 			h -= 5;
 		} else {
@@ -3625,7 +3627,7 @@ static qboolean UI_TeamMember_HandleKey( int flags, float *special, int key, qbo
 		// 0 - None
 		// 1 - Human
 		// 2..NumCharacters - Bot
-		char *cvar = va( blue ? "ui_blueteam%i" : "ui_redteam%i", num );
+		const char *cvar = va( blue ? "ui_blueteam%i" : "ui_redteam%i", num );
 		int value = trap_Cvar_VariableValue( cvar );
 
 		if ( key == K_MOUSE2 ) {
@@ -3994,7 +3996,7 @@ static void UI_LoadProfiles() {
 			if ( uiInfo.profileIndex == -1 ) {
 				Q_CleanStr( token.string );
 				Q_CleanDirName( token.string );
-				if ( !Q_stricmp( token.string, cl_profile.string ) ) {
+				if ( !Q_stricmp( token.string, ui_cl_profile.string ) ) {
 					int j;
 
 					uiInfo.profileIndex = i;
@@ -4244,7 +4246,7 @@ qboolean UI_CheckExecKey( int key ) {
 	}
 
 	if ( !menu ) {
-		if ( cl_bypassMouseInput.integer ) {
+		if ( ui_cl_bypassMouseInput.integer ) {
 			if ( !trap_Key_GetCatcher() ) {
 				trap_Cvar_Set( "cl_bypassMouseInput", "0" );
 			}
@@ -4361,7 +4363,7 @@ void UI_Update( const char *name ) {
 UI_RunMenuScript
 ==============
 */
-void UI_RunMenuScript( char **args ) {
+void UI_RunMenuScript( const char **args ) {
 	const char *name, *name2;
 	char *s;
 	char buff[1024];
@@ -4391,8 +4393,8 @@ void UI_RunMenuScript( char **args ) {
 			trap_Cvar_Set( "cg_thirdPerson", "0" );
 			trap_Cvar_Set( "cg_cameraOrbit", "0" );
 			trap_Cvar_Set( "ui_singlePlayerActive", "0" );
-			trap_Cvar_SetValue( "dedicated", Com_Clamp( 0, 2, ui_dedicated.integer ) );
-			trap_Cvar_SetValue( "g_gametype", Com_Clamp( 0, 8, ui_netGameType.integer ) );
+			trap_Cvar_SetValue( "dedicated", Com_ClampInt( 0, 2, ui_dedicated.integer ) );
+			trap_Cvar_SetValue( "g_gametype", Com_ClampInt( 0, GT_MAX_GAME_TYPE-1, ui_netGameType.integer ) );
 
 			if ( ui_netGameType.integer == GT_WOLF_CAMPAIGN ) {
 				trap_Cmd_ExecuteText( EXEC_APPEND, va( "wait ; wait ; map %s\n", uiInfo.campaignList[ui_currentNetMap.integer].mapInfos[0]->mapLoadName ) );
@@ -4787,10 +4789,10 @@ void UI_RunMenuScript( char **args ) {
 					res = trap_LAN_AddServer( AS_FAVORITES, name, addr );
 					if ( res == 0 ) {
 						// server already in the list
-						Com_Printf( trap_TranslateString( "Favorite already in list\n" ) );
+						Com_Printf( "%s", trap_TranslateString( "Favorite already in list\n" ) );
 					} else if ( res == -1 )     {
 						// list full
-						Com_Printf( trap_TranslateString( "Favorite list full\n" ) );
+						Com_Printf( "%s", trap_TranslateString( "Favorite list full\n" ) );
 					} else {
 						// successfully added
 						Com_Printf( trap_TranslateString( "Added favorite server %s\n" ), addr );
@@ -4820,10 +4822,10 @@ void UI_RunMenuScript( char **args ) {
 					res = trap_LAN_AddServer( AS_FAVORITES, name, addr );
 					if ( res == 0 ) {
 						// server already in the list
-						Com_Printf( trap_TranslateString( "Favorite already in list\n" ) );
+						Com_Printf( "%s", trap_TranslateString( "Favorite already in list\n" ) );
 					} else if ( res == -1 )     {
 						// list full
-						Com_Printf( trap_TranslateString( "Favorite list full\n" ) );
+						Com_Printf( "%s", trap_TranslateString( "Favorite list full\n" ) );
 					} else {
 						// successfully added
 						Com_Printf( trap_TranslateString( "Added favorite server %s\n" ), addr );
@@ -4846,10 +4848,10 @@ void UI_RunMenuScript( char **args ) {
 				res = trap_LAN_AddServer( AS_FAVORITES, name, addr );
 				if ( res == 0 ) {
 					// server already in the list
-					Com_Printf( trap_TranslateString( "Favorite already in list\n" ) );
+					Com_Printf( "%s", trap_TranslateString( "Favorite already in list\n" ) );
 				} else if ( res == -1 )     {
 					// list full
-					Com_Printf( trap_TranslateString( "Favorite list full\n" ) );
+					Com_Printf( "%s", trap_TranslateString( "Favorite list full\n" ) );
 				} else {
 					// successfully added
 					Com_Printf( trap_TranslateString( "Added favorite server %s\n" ), addr );
@@ -5059,25 +5061,25 @@ void UI_RunMenuScript( char **args ) {
 			fileHandle_t f;
 
 			// delete profile.pid from current profile
-			if ( trap_FS_FOpenFile( va( "profiles/%s/profile.pid", cl_profile.string ), &f, FS_READ ) >= 0 ) {
+			if ( trap_FS_FOpenFile( va( "profiles/%s/profile.pid", ui_cl_profile.string ), &f, FS_READ ) >= 0 ) {
 				trap_FS_FCloseFile( f );
-				trap_FS_Delete( va( "profiles/%s/profile.pid", cl_profile.string ) );
+				trap_FS_Delete( va( "profiles/%s/profile.pid", ui_cl_profile.string ) );
 			}
 		} else if ( Q_stricmp( name, "applyProfile" ) == 0 ) {
-			Q_strncpyz( cl_profile.string, ui_profile.string, sizeof( cl_profile.string ) );
-			Q_CleanStr( cl_profile.string );
-			Q_CleanDirName( cl_profile.string );
-			trap_Cvar_Set( "cl_profile", cl_profile.string );
+			Q_strncpyz( ui_cl_profile.string, ui_profile.string, sizeof( ui_cl_profile.string ) );
+			Q_CleanStr( ui_cl_profile.string );
+			Q_CleanDirName( ui_cl_profile.string );
+			trap_Cvar_Set( "cl_profile", ui_cl_profile.string );
 		} else if ( Q_stricmp( name, "setDefaultProfile" ) == 0 ) {
 			fileHandle_t f;
 
-			Q_strncpyz( cl_defaultProfile.string, ui_profile.string, sizeof( cl_profile.string ) );
-			Q_CleanStr( cl_defaultProfile.string );
-			Q_CleanDirName( cl_defaultProfile.string );
-			trap_Cvar_Set( "cl_defaultProfile", cl_defaultProfile.string );
+			Q_strncpyz( ui_cl_defaultProfile.string, ui_profile.string, sizeof( ui_cl_profile.string ) );
+			Q_CleanStr( ui_cl_defaultProfile.string );
+			Q_CleanDirName( ui_cl_defaultProfile.string );
+			trap_Cvar_Set( "cl_defaultProfile", ui_cl_defaultProfile.string );
 
 			if ( trap_FS_FOpenFile( "profiles/defaultprofile.dat", &f, FS_WRITE ) >= 0 ) {
-				trap_FS_Write( va( "\"%s\"", cl_defaultProfile.string ), strlen( cl_defaultProfile.string ) + 2, f );
+				trap_FS_Write( va( "\"%s\"", ui_cl_defaultProfile.string ), strlen( ui_cl_defaultProfile.string ) + 2, f );
 				trap_FS_FCloseFile( f );
 			}
 		} else if ( Q_stricmp( name, "deleteProfile" ) == 0 ) {
@@ -5088,14 +5090,14 @@ void UI_RunMenuScript( char **args ) {
 			Q_CleanDirName( buff );
 
 			// can't delete active profile
-			if ( Q_stricmp( buff, cl_profile.string ) ) {
-				if ( !Q_stricmp( buff, cl_defaultProfile.string ) ) {
+			if ( Q_stricmp( buff, ui_cl_profile.string ) ) {
+				if ( !Q_stricmp( buff, ui_cl_defaultProfile.string ) ) {
 					// if deleting the default profile, set the default to the current active profile
 					fileHandle_t f;
 
-					trap_Cvar_Set( "cl_defaultProfile", cl_profile.string );
+					trap_Cvar_Set( "cl_defaultProfile", ui_cl_profile.string );
 					if ( trap_FS_FOpenFile( "profiles/defaultprofile.dat", &f, FS_WRITE ) >= 0 ) {
-						trap_FS_Write( va( "\"%s\"", cl_profile.string ), strlen( cl_profile.string ) + 2, f );
+						trap_FS_Write( va( "\"%s\"", ui_cl_profile.string ), strlen( ui_cl_profile.string ) + 2, f );
 						trap_FS_FCloseFile( f );
 					}
 				}
@@ -5143,7 +5145,7 @@ void UI_RunMenuScript( char **args ) {
 				}
 
 				if ( trap_FS_FOpenFile( va( "profiles/%s/servercache.dat", buff ), &f, FS_WRITE ) >= 0 ) {
-					if ( ( len = trap_FS_FOpenFile( va( "profiles/%s/servercache.dat", cl_profile.string ), &f2, FS_READ ) ) >= 0 ) {
+					if ( ( len = trap_FS_FOpenFile( va( "profiles/%s/servercache.dat", ui_cl_profile.string ), &f2, FS_READ ) ) >= 0 ) {
 						int i;
 
 						for ( i = 0; i < len; i++ ) {
@@ -5157,7 +5159,7 @@ void UI_RunMenuScript( char **args ) {
 					trap_FS_FCloseFile( f );
 				}
 
-				if ( !Q_stricmp( uiprofile, cl_defaultProfile.string ) ) {
+				if ( !Q_stricmp( uiprofile, ui_cl_defaultProfile.string ) ) {
 					// if renaming the default profile, set the default to the new profile
 					trap_Cvar_Set( "cl_defaultProfile", buff );
 					if ( trap_FS_FOpenFile( "profiles/defaultprofile.dat", &f, FS_WRITE ) >= 0 ) {
@@ -5167,7 +5169,7 @@ void UI_RunMenuScript( char **args ) {
 				}
 
 				// if renaming the active profile, set active to new name
-				if ( !Q_stricmp( uiprofile, cl_profile.string ) ) {
+				if ( !Q_stricmp( uiprofile, ui_cl_profile.string ) ) {
 					trap_Cvar_Set( "cl_profile", buff );
 				}
 
@@ -6581,13 +6583,13 @@ const char *UI_FeederItemText( float feederID, int index, int column, qhandle_t 
 			Q_CleanStr( buff );
 			Q_CleanDirName( buff );
 
-			if ( !Q_stricmp( buff, cl_profile.string ) ) {
-				if ( !Q_stricmp( buff, cl_defaultProfile.string ) ) {
+			if ( !Q_stricmp( buff, ui_cl_profile.string ) ) {
+				if ( !Q_stricmp( buff, ui_cl_defaultProfile.string ) ) {
 					return( va( "^7(Default) %s", uiInfo.profileList[index].name ) );
 				} else {
 					return( va( "^7%s", uiInfo.profileList[index].name ) );
 				}
-			} else if ( !Q_stricmp( buff, cl_defaultProfile.string ) ) {
+			} else if ( !Q_stricmp( buff, ui_cl_defaultProfile.string ) ) {
 				return( va( "(Default) %s", uiInfo.profileList[index].name ) );
 			} else {
 				return uiInfo.profileList[index].name;
@@ -6715,7 +6717,7 @@ void UI_FeederSelection( float feederID, int index ) {
 	} else if ( feederID == FEEDER_CAMPAIGNS || feederID == FEEDER_ALLCAMPAIGNS ) {
 		int actual, campaign, campaignCount;
 		campaign = ( feederID == FEEDER_ALLCAMPAIGNS ) ? ui_currentNetCampaign.integer : ui_currentCampaign.integer;
-		campaignCount = UI_CampaignCount( feederID == FEEDER_CAMPAIGNS );
+		campaignCount = UI_CampaignCount( feederID == FEEDER_CAMPAIGNS ? qtrue : qfalse );
 		if ( uiInfo.campaignList[campaign].campaignCinematic >= 0 ) {
 			trap_CIN_StopCinematic( uiInfo.campaignList[campaign].campaignCinematic );
 			uiInfo.campaignList[campaign].campaignCinematic = -1;
@@ -7080,8 +7082,8 @@ static void UI_ParseTeamInfo(const char *teamFile) {
 GameType_Parse
 ==============
 */
-static qboolean GameType_Parse( char **p, qboolean join ) {
-	char *token;
+static qboolean GameType_Parse( const char **p, qboolean join ) {
+	const char *token;
 
 	token = COM_ParseExt( p, qtrue );
 
@@ -7219,8 +7221,8 @@ static qboolean MapList_Parse( char **p ) {
 #endif
 
 static void UI_ParseGameInfo( const char *teamFile ) {
-	char    *token;
-	char *p;
+	const char    *token;
+	const char *p;
 	char *buff = NULL;
 	// int mode = 0; // TTimo: unused
 
@@ -7387,9 +7389,27 @@ UI_Init
 =================
 */
 void _UI_Init( qboolean inGameLoad ) {
+	char  value[MAX_CVAR_VALUE_STRING];
 	int start, x;
 
 	//uiInfo.inGameLoad = inGameLoad;
+
+	trap_Cvar_VariableStringBuffer( "//trap_GetValue", value, sizeof( value ) );
+	if ( value[0] ) {
+		dll_com_trapGetValue = atoi( value );
+		if ( trap_GetValue( value, sizeof( value ), "trap_R_AddRefEntityToScene2" ) ) {
+			dll_trap_R_AddRefEntityToScene2 = atoi( value );
+			intShaderTime = qtrue;
+		}
+		if ( trap_GetValue( value, sizeof( value ), "trap_R_AddLinearLightToScene_ETE" ) ) {
+			dll_trap_R_AddLinearLightToScene = atoi( value );
+			linearLight = qtrue;
+		}
+		if ( trap_GetValue( value, sizeof( value ), "trap_RemoveCommand" ) ) {
+			dll_trap_RemoveCommand = atoi( value );
+			removeCommand = qtrue;
+		}
+	}
 
 	UI_RegisterCvars();
 	UI_InitMemory();
@@ -7586,7 +7606,7 @@ void _UI_KeyEvent( int key, qboolean down ) {
 				trap_Key_ClearStates();
 			}
 
-			if ( cl_bypassMouseInput.integer ) {
+			if ( ui_cl_bypassMouseInput.integer ) {
 				if ( !trap_Key_GetCatcher() ) {
 					trap_Cvar_Set( "cl_bypassMouseInput", 0 );
 				}
@@ -7679,7 +7699,7 @@ void _UI_SetActiveMenu( uiMenuCommand_t menu ) {
 			//Menus_ActivateByName( "background_1", qtrue );
 			Menus_ActivateByName( "backgroundmusic", qtrue );    // Arnout: not nice, but best way to do it - putting the music in it's own menudef
 																 // makes sure it doesn't get restarted every time you reach the main menu
-			if ( !cl_profile.string[0] ) {
+			if ( !ui_cl_profile.string[0] ) {
 				//Menus_ActivateByName( "profilelogin", qtrue );
 				// FIXME: initial profile popup
 				// FIXED: handled in opener now
@@ -8266,8 +8286,8 @@ vmCvar_t ui_glCustom;    // JPW NERVE missing from q3ta
 
 vmCvar_t g_gameType;
 
-vmCvar_t cl_profile;
-vmCvar_t cl_defaultProfile;
+vmCvar_t ui_cl_profile;
+vmCvar_t ui_cl_defaultProfile;
 vmCvar_t ui_profile;
 vmCvar_t ui_currentNetCampaign;
 vmCvar_t ui_currentCampaign;
@@ -8283,7 +8303,7 @@ vmCvar_t cg_crosshairAlphaAlt;
 vmCvar_t cg_crosshairSize;
 // OSP
 
-vmCvar_t cl_bypassMouseInput;
+vmCvar_t ui_cl_bypassMouseInput;
 
 //bani
 vmCvar_t ui_autoredirect;
@@ -8437,15 +8457,15 @@ cvarTable_t cvarTable[] = {
 	{ NULL, "cg_crosshairColorAlt", "White", CVAR_ARCHIVE },
 	{ NULL, "cg_coronafardist", "1536", CVAR_ARCHIVE },
 	{ NULL, "cg_wolfparticles", "1", CVAR_ARCHIVE },
-	{ NULL, "g_password", "none", CVAR_USERINFO },
+	{ NULL, "g_password", "none", CVAR_TEMP },
 	{ NULL, "g_antilag", "1", CVAR_SERVERINFO | CVAR_ARCHIVE },
 	{ NULL, "g_warmup", "60", CVAR_ARCHIVE },
 	{ NULL, "g_lms_roundlimit", "3", CVAR_ARCHIVE },
 	{ NULL, "g_lms_matchlimit", "2", CVAR_ARCHIVE },
 	{ NULL, "g_lms_followTeamOnly", "1", CVAR_ARCHIVE },
 	{ NULL, "g_heavyWeaponRestriction", "100", CVAR_ARCHIVE | CVAR_SERVERINFO },
-	{ &cl_profile, "cl_profile", "", CVAR_ROM },
-	{ &cl_defaultProfile, "cl_defaultProfile", "", CVAR_ROM },
+	{ &ui_cl_profile, "cl_profile", "", CVAR_ROM },
+	{ &ui_cl_defaultProfile, "cl_defaultProfile", "", CVAR_ROM },
 	{ &ui_profile, "ui_profile", "", CVAR_ROM },
 	{ &ui_currentCampaign, "ui_currentCampaign", "0", CVAR_ARCHIVE },
 	{ &ui_currentNetCampaign, "ui_currentNetCampaign", "0", CVAR_ARCHIVE },
@@ -8524,7 +8544,7 @@ cvarTable_t cvarTable[] = {
 	{ NULL, "ui_sensitivity", "", CVAR_ARCHIVE },
 	{ NULL, "ui_profile_mousePitch", "", CVAR_ARCHIVE },
 
-	{ &cl_bypassMouseInput, "cl_bypassMouseInput", "0", CVAR_TEMP },
+	{ &ui_cl_bypassMouseInput, "cl_bypassMouseInput", "0", CVAR_TEMP },
 
 	{ NULL,     "g_oldCampaign",         "",      CVAR_ROM, },
 	{ NULL,     "g_currentCampaign",     "",      CVAR_WOLFINFO | CVAR_ROM, },
@@ -8536,7 +8556,7 @@ cvarTable_t cvarTable[] = {
 	{ &ui_autoredirect, "ui_autoredirect", "0", CVAR_ARCHIVE },
 };
 
-int cvarTableSize = sizeof( cvarTable ) / sizeof( cvarTable[0] );
+static const int cvarTableSize = (int)ARRAY_LEN( cvarTable );
 
 
 /*

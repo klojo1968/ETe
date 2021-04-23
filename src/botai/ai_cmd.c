@@ -215,34 +215,6 @@ float BotGetTime( bot_match_t *match ) {
 
 /*
 ==================
-FindClientByName
-==================
-*/
-int FindClientByName( char *name ) {
-	int i, j;
-	char buf[MAX_INFO_STRING];
-
-	for ( j = 0; j < level.numConnectedClients; j++ ) {
-		i = level.sortedClients[j];
-		ClientName( i, buf, sizeof( buf ) );
-		if ( !Q_stricmp( buf, name ) ) {
-			return i;
-		}
-	}
-
-	for ( j = 0; j < level.numConnectedClients; j++ ) {
-		i = level.sortedClients[j];
-		ClientName( i, buf, sizeof( buf ) );
-		if ( stristr( buf, name ) ) {
-			return i;
-		}
-	}
-
-	return -1;
-}
-
-/*
-==================
 FindEnemyByName
 ==================
 */

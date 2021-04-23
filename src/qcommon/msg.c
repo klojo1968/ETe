@@ -92,7 +92,7 @@ void MSG_BeginReadingUncompressed( msg_t *buf ) {
 	buf->oob = qtrue;
 }
 
-void MSG_Copy( msg_t *buf, byte *data, int length, msg_t *src ) {
+void MSG_Copy( msg_t *buf, byte *data, int length, const msg_t *src ) {
 	if ( length < src->cursize ) {
 		Com_Error( ERR_DROP, "MSG_Copy: can't copy %d into a smaller %d msg_t buffer", src->cursize, length );
 	}

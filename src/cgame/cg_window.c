@@ -442,7 +442,7 @@ void CG_demoAviFPSDraw( void ) {
 
 void CG_demoTimescaleDraw( void ) {
 	if ( cg.demoPlayback && cgs.timescaleUpdate > cg.time && demo_drawTimeScale.integer != 0 ) {
-		char *s = va( "^3TimeScale: ^7%.1f", cg_timescale.value );
+		const char *s = va( "^3TimeScale: ^7%.1f", cg_timescale.value );
 		int w = CG_DrawStrlen( s ) * SMALLCHAR_WIDTH;
 
 		CG_FillRect( 42 - 2, 400, w + 5, SMALLCHAR_HEIGHT + 3, colorDkGreen );
@@ -648,7 +648,7 @@ void CG_windowNormalizeOnText( cg_window_t *w ) {
 }
 
 
-void CG_printWindow( char *str ) {
+void CG_printWindow( const char *str ) {
 	int pos = 0, pos2 = 0;
 	char buf[MAX_STRING_CHARS];
 	cg_window_t *w = cg.windowCurrent;

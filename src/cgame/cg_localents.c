@@ -158,8 +158,8 @@ void CG_BloodTrail( localEntity_t *le ) {
 	static vec3_t col = {1,1,1};
 #endif
 
-	centity_t   *cent;
-	cent = &cg_entities[le->ownerNum];
+	//centity_t   *cent;
+	//cent = &cg_entities[le->ownerNum];
 
 	if ( !cg_blood.integer ) {
 		return;
@@ -418,7 +418,7 @@ void CG_AddFragment( localEntity_t *le ) {
 //----(SA)	end
 
 	if ( le->pos.trType == TR_STATIONARY ) {
-		int t;
+		//int t;
 
 		// Ridah, add the flame
 		if ( hasFlame ) {
@@ -439,13 +439,13 @@ void CG_AddFragment( localEntity_t *le ) {
 			le->refEntity = backupEnt;
 		}
 
-		t = le->endTime - cg.time;
+		//t = le->endTime - cg.time;
 		trap_R_AddRefEntityToScene( &le->refEntity );
 
 		return;
 
 	} else if ( le->pos.trType == TR_GRAVITY_PAUSED ) {
-		int t;
+		//int t;
 
 		// Ridah, add the flame
 		if ( hasFlame ) {
@@ -466,7 +466,7 @@ void CG_AddFragment( localEntity_t *le ) {
 			le->refEntity = backupEnt;
 		}
 
-		t = le->endTime - cg.time;
+		//t = le->endTime - cg.time;
 		trap_R_AddRefEntityToScene( &le->refEntity );
 
 
@@ -1148,8 +1148,8 @@ static void CG_AddScaleFade( localEntity_t *le ) {
 	// if the view would be "inside" the sprite, kill the sprite
 	// so it doesn't add too much overdraw
 	VectorSubtract( re->origin, cg.refdef_current->vieworg, delta );
-	len = VectorLength( delta );
-	if ( len < le->radius ) {
+	len = VectorLengthSquared( delta );
+	if ( len < le->radius * le->radius ) {
 		CG_FreeLocalEntity( le );
 		return;
 	}
@@ -1188,8 +1188,8 @@ static void CG_AddFallScaleFade( localEntity_t *le ) {
 	// if the view would be "inside" the sprite, kill the sprite
 	// so it doesn't add too much overdraw
 	VectorSubtract( re->origin, cg.refdef_current->vieworg, delta );
-	len = VectorLength( delta );
-	if ( len < le->radius ) {
+	len = VectorLengthSquared( delta );
+	if ( len < le->radius * le->radius ) {
 		CG_FreeLocalEntity( le );
 		return;
 	}

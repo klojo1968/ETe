@@ -506,7 +506,7 @@ void SV_ClipToEntity( trace_t *trace, const vec3_t start, const vec3_t mins, con
 		angles = vec3_origin;   // boxes don't rotate
 	}
 
-#ifdef __MACOS__
+#if defined(__APPLE__) || defined(__APPLE_CC__)
 	// compiler bug with const
 	CM_TransformedBoxTrace( trace, (float *)start, (float *)end,
 							(float *)mins, (float *)maxs, clipHandle,  contentmask,
@@ -597,7 +597,7 @@ static void SV_ClipMoveToEntities( moveclip_t *clip ) {
 			angles = vec3_origin;	// boxes don't rotate
 		}
 
-#ifdef __MACOS__
+#if defined(__APPLE__) || defined(__APPLE_CC__)
 		// compiler bug with const
 		CM_TransformedBoxTrace( &trace, (float *)clip->start, (float *)clip->end,
 								(float *)clip->mins, (float *)clip->maxs, clipHandle,  clip->contentmask,

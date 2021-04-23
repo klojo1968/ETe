@@ -96,21 +96,10 @@ int CG_SoundScriptPrecache( const char *name ) {
 		if ( !Q_stricmp( s, sound->name ) ) {
 			// found a match, precache these sounds
 			scriptSound = sound->soundList;
-			if ( !sound->streaming ) {
-				for ( ; scriptSound; scriptSound = scriptSound->next ) {
-					for ( i = 0; i < scriptSound->numsounds; i++ ) {
-						scriptSound->sounds[i].sfxHandle = 0;
-//						scriptSound->sounds[i].sfxHandle = trap_S_RegisterSound( scriptSound->sounds[i].filename, qfalse );	// FIXME: make compressed settable through the soundscript
-					}
-				}
-			} else /*if (cg_buildScript.integer)*/ {    // Enabled this permanently so that streaming sounds get touched within file system on startup
-				for ( ; scriptSound; scriptSound = scriptSound->next ) {
-					for ( i = 0; i < scriptSound->numsounds; i++ ) {
-						// just open the file so it gets copied to the build dir
-/*						fileHandle_t f;
-						trap_FS_FOpenFile( scriptSound->sounds[i].filename, &f, FS_READ );
-						trap_FS_Read( buf, sizeof( buf ), f ); // read a few bytes so the operating system does a better job of caching it for us
-						trap_FS_FCloseFile( f );*/
+			for ( ; scriptSound; scriptSound = scriptSound->next ) {
+				for ( i = 0; i < scriptSound->numsounds; i++ ) {
+					if ( !scriptSound->sounds[i].sfxHandle ) {
+						scriptSound->sounds[i].sfxHandle = trap_S_RegisterSound( scriptSound->sounds[i].filename, qfalse );	// FIXME: make compressed settable through the soundscript
 					}
 				}
 			}
@@ -205,7 +194,7 @@ CG_SoundPlaySoundScript
 */
 int CG_SoundPlaySoundScript( const char *name, vec3_t org, int entnum, qboolean buffer ) {
 	long hash;
-	char *s;
+	const char *s;
 	soundScript_t   *sound;
 
 	if ( !name || !name[0] ) {
@@ -214,7 +203,7 @@ int CG_SoundPlaySoundScript( const char *name, vec3_t org, int entnum, qboolean 
 
 	hash = generateHashValue( name );
 
-	s = (char *)name;
+	s = name;
 	sound = hashTable[hash];
 	while ( sound ) {
 		if ( !Q_stricmp( s, sound->name ) ) {
@@ -262,8 +251,8 @@ void CG_SoundPlayIndexedScript( int index, vec3_t org, int entnum ) {
 CG_SoundParseSounds
 ===============
 */
-static void CG_SoundParseSounds( char *filename, char *buffer ) {
-	char *token, **text;
+static void CG_SoundParseSounds( const char *filename, const char *buffer ) {
+	const char *token, **text;
 	int s;
 	long hash;
 	soundScript_t sound;                // the current sound being read
@@ -414,7 +403,7 @@ extern char bigTextBuffer[100000];  // we got it anyway, might as well use it
 #define MAX_SOUND_FILES     128
 static void CG_SoundLoadSoundFiles( void ) {
 	char soundFiles[MAX_SOUND_FILES][MAX_QPATH];
-	char *text;
+	const char *text;
 	char filename[MAX_QPATH];
 	fileHandle_t f;
 	int numSounds;
@@ -425,10 +414,13 @@ static void CG_SoundLoadSoundFiles( void ) {
 	Com_sprintf( filename, MAX_QPATH, "sound/scripts/filelist.txt" );
 	len = trap_FS_FOpenFile( filename, &f, FS_READ );
 	if ( len <= 0 ) {
+		if ( f )
+			trap_FS_FCloseFile(f);
 		CG_Printf( S_COLOR_RED "WARNING: no sound files found (filelist.txt not found in sound/scripts)\n" );
 		return;
 	}
 	if ( len > sizeof( bigTextBuffer ) ) {
+		trap_FS_FCloseFile( f );
 		CG_Error( "%s is too big, make it smaller (max = %i bytes)\n", filename, sizeof( bigTextBuffer ) );
 	}
 	// load the file into memory
@@ -443,7 +435,7 @@ static void CG_SoundLoadSoundFiles( void ) {
 		if ( !token[0] ) {
 			break;
 		}
-		Com_sprintf( soundFiles[numSounds++], MAX_QPATH, token );
+		Com_sprintf( soundFiles[numSounds++], MAX_QPATH, "%s", token );
 	}
 
 	// add the map specific soundfile
@@ -541,7 +533,7 @@ qboolean CG_SaveSpeakersToScript( void ) {
 	int i;
 	bg_speaker_t    *speaker;
 	fileHandle_t fh;
-	char            *s;
+	const char            *s;
 
 	if ( trap_FS_FOpenFile( va( "sound/maps/%s.sps", cgs.rawmapname ), &fh, FS_WRITE ) < 0 ) {
 		CG_Printf( S_COLOR_RED "ERROR: failed to save speakers to 'sound/maps/%s.sps'\n", cgs.rawmapname );
@@ -876,7 +868,7 @@ void CG_SpeakerInfo_Text( panel_button_t* button ) {
 	VectorCopy( colorBlue, colour );
 	CG_DrawRect( button->rect.x - 2, button->rect.y - 2, wMax + 4, h + 4, 1.f, colour );
 
-	s = va( "%s%s%s%s%s%s%s%s%s",
+	s = (char *)va( "%s%s%s%s%s%s%s%s%s",
 			originStr,
 			filenameStr,
 			targetnameStr,
@@ -1124,7 +1116,7 @@ qboolean CG_SpeakerEditor_NoiseEdit_KeyDown( panel_button_t* button, int key ) {
 			int i, numfiles, filelen;
 			char *fileptr;
 
-			COM_StripFilename( (char *)button->text, dirname );
+			COM_StripFilename( button->text, dirname, sizeof(dirname) );
 			Q_strncpyz( filename, COM_SkipPath( (char *)button->text ), sizeof( filename ) );
 
 			if ( !Q_stricmp( button->text, dirname ) ) {

@@ -34,34 +34,34 @@ team_t CG_Debriefing_FindWinningTeamForPos( int pos );
 
 int QDECL CG_SortPlayersByXP( const void *a, const void *b );
 
-#define DB_MASTER_FONT &cgs.media.limboFont2
+#define DB_MAIN_FONT &cgs.media.limboFont2
 
 panel_button_text_t debriefTitleFont = {
 	0.3f, 0.3f,
 	{ 1.f, 1.f, 1.f, 0.8f },
 	0, ITEM_ALIGN_CENTER,
-	DB_MASTER_FONT,
+	DB_MAIN_FONT,
 };
 
 panel_button_text_t debriefHeadingFont = {
 	0.24f, 0.24f,
 	{ 1.f, 1.f, 1.f, 0.8f },
 	0, 0,
-	DB_MASTER_FONT,
+	DB_MAIN_FONT,
 };
 
 panel_button_text_t debriefListFont = {
 	0.20f, 0.22f,
 	{ 1.f, 1.f, 1.f, 0.8f },
 	0, 0,
-	DB_MASTER_FONT,
+	DB_MAIN_FONT,
 };
 
 panel_button_text_t debriefPlayerHeadingSmallerFont = {
 	0.2f, 0.2f,
 	{ 0.6f, 0.6f, 0.6f, 1.f },
 	0, 0,
-	DB_MASTER_FONT,
+	DB_MAIN_FONT,
 };
 
 #define DB_RANK_X   213 + 4
@@ -464,7 +464,7 @@ panel_button_text_t debriefPlayerListFont = {
 	0.2f, 0.2f,
 	{ 0.6f, 0.6f, 0.6f, 1.f },
 	0, 0,
-	DB_MASTER_FONT,
+	DB_MAIN_FONT,
 };
 
 panel_button_t debriefHeadingRank = {
@@ -584,7 +584,7 @@ panel_button_text_t debriefPlayerInfoFont = {
 	0.2f, 0.2f,
 	{ 0.6f, 0.6f, 0.6f, 1.f },
 	0, 0,
-	DB_MASTER_FONT,
+	DB_MAIN_FONT,
 };
 
 panel_button_t debriefPlayerInfoWindow = {
@@ -823,21 +823,21 @@ panel_button_text_t teamDebriefBigTitle = {
 	0.32f, 0.32f,
 	{ 1.f, 1.f, 1.f, 0.8f },
 	0, 0,
-	DB_MASTER_FONT,
+	DB_MAIN_FONT,
 };
 
 panel_button_text_t teamDebriefTitleSmall = {
 	0.24f, 0.24f,
 	{ 1.f, 1.f, 1.f, 0.8f },
 	0, ITEM_ALIGN_CENTER,
-	DB_MASTER_FONT,
+	DB_MAIN_FONT,
 };
 
 panel_button_text_t teamDebriefTitle = {
 	0.28f, 0.28f,
 	{ 1.f, 1.f, 1.f, 0.8f },
 	0, 0,
-	DB_MASTER_FONT,
+	DB_MAIN_FONT,
 };
 
 panel_button_t teamDebriefMapWinnerText = {
@@ -1012,14 +1012,14 @@ panel_button_text_t chatPanelButtonFont = {
 	0.20f, 0.20f,
 	{ 1.f, 1.f, 1.f, 0.8f },
 	0, ITEM_ALIGN_CENTER,
-	DB_MASTER_FONT,
+	DB_MAIN_FONT,
 };
 
 panel_button_text_t chatPanelButtonFontRed = {
 	0.20f, 0.20f,
 	{ 1.f, 0.f, 0.f, 0.8f },
 	0, ITEM_ALIGN_CENTER,
-	DB_MASTER_FONT,
+	DB_MAIN_FONT,
 };
 
 
@@ -1151,7 +1151,7 @@ void CG_Debriefing_ChatEdit_Draw( panel_button_t* button ) {
 
 	do {
 		offset++;
-		if ( buffer + offset  == '\0' ) {
+		if ( buffer[offset] == '\0' ) {
 			break;
 		}
 	} while ( CG_Text_Width_Ext( buffer + offset, button->font->scalex, 0, button->font->font ) > button->rect.w );
@@ -1176,7 +1176,7 @@ void CG_Debriefing_ChatEdit_Draw( panel_button_t* button ) {
 }
 
 void CG_Debriefing_ChatBox_Draw( panel_button_t* button ) {
-	int w, h;
+	int w;//, h;
 	int i, len;
 	vec4_t hcolor;
 	float lineHeight = 9.f;
@@ -1185,7 +1185,7 @@ void CG_Debriefing_ChatBox_Draw( panel_button_t* button ) {
 	int chatHeight = button->rect.h;
 
 	if ( cgs.teamLastChatPos != cgs.teamChatPos ) {
-		h = ( cgs.teamChatPos - cgs.teamLastChatPos ) * TINYCHAR_HEIGHT;
+		//h = ( cgs.teamChatPos - cgs.teamLastChatPos ) * TINYCHAR_HEIGHT;
 
 		w = 0;
 
@@ -1489,7 +1489,7 @@ void CG_DebriefingTitle_Draw( panel_button_t* button ) {
 
 	CG_Text_Paint_Ext( x, button->rect.y, button->font->scalex, button->font->scaley, button->font->colour, s, 0, 0, 0, button->font->font );
 
-	s = va( "%i seconds to next map", max( 60 - ( cg.time - cgs.intermissionStartTime ) / 1000, 0 ) );
+	s = va( "%i seconds to next map", MAX( 60 - ( cg.time - cgs.intermissionStartTime ) / 1000, 0 ) );
 	w = CG_Text_Width_Ext( s, button->font->scalex, 0, button->font->font );
 	x = button->rect.x + button->rect.w - w - 4;
 
@@ -1755,7 +1755,7 @@ void CG_Debriefing_ScrollCheckOffset( panel_button_t* button ) {
 	int cnt =       CG_Debriefing_ScrollGetCount( button );
 	int offset =    CG_Debriefing_ScrollGetOffset( button );
 
-	int maxofs = max( 0, cnt - max );
+	int maxofs = MAX( 0, cnt - max );
 
 	if ( offset > maxofs ) {
 		CG_Debriefing_ScrollSetOffset( button, maxofs );
@@ -2192,7 +2192,7 @@ void CG_TeamDebriefingOutcome_Draw( panel_button_t* button ) {
 	}
 
 	Q_strncpyz( buffer, cs, sizeof( buffer ) );
-	while ( ( s = strchr( buffer, '*' ) ) ) {
+	while ( ( s = strchr( buffer, '*' ) ) != NULL ) {
 		*s = '\n';
 	}
 
@@ -2416,7 +2416,7 @@ void CG_Debreifing2_MissionTitle_Draw( panel_button_t* button ) {
 		CG_PanelButtonsRender_Window_Ext( &button->rect, CG_Debreifing2_WinStringForTeam( CG_Debriefing_FindOveralWinningTeam() ), 0, 18, 0.25f, 16 );
 	}
 
-	s = va( "%i SECS TO NEXT MAP", max( 60 - ( cg.time - cgs.intermissionStartTime ) / 1000, 0 ) );
+	s = va( "%i SECS TO NEXT MAP", MAX( 60 - ( cg.time - cgs.intermissionStartTime ) / 1000, 0 ) );
 
 	w = CG_Text_Width_Ext( s, 0.25f, 0, &cgs.media.limboFont1 );
 	x = button->rect.x + button->rect.w - w - 4;
@@ -2443,7 +2443,7 @@ const char* awardNames[NUM_ENDGAME_AWARDS] = {
 
 void CG_Debreifing2_Awards_Parse( void ) {
 	int i = 0;
-	char* cs = (char*)CG_ConfigString( CS_ENDGAME_STATS );
+	const char* cs = CG_ConfigString( CS_ENDGAME_STATS );
 	const char* token;
 	char* s;
 	int size, len;
@@ -2452,7 +2452,7 @@ void CG_Debreifing2_Awards_Parse( void ) {
 	Q_strncpyz( buffer, cs, sizeof( cgs.dbAwardNamesBuffer ) );
 	cs = buffer;
 
-	while ( ( s = strchr( cs, ';' ) ) ) {
+	while ( ( s = strchr( cs, ';' ) ) != NULL ) {
 		*s = '"';
 	}
 

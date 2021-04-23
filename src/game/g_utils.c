@@ -129,7 +129,7 @@ int G_FindConfigstringIndex( const char *name, int start, int max, qboolean crea
 }
 
 
-int G_ModelIndex( char *name ) {
+int G_ModelIndex( const char *name ) {
 	return G_FindConfigstringIndex( name, CS_MODELS, MAX_MODELS, qtrue );
 }
 
@@ -141,7 +141,7 @@ int G_SkinIndex( const char *name ) {
 	return G_FindConfigstringIndex( name, CS_SKINS, MAX_CS_SKINS, qtrue );
 }
 
-int G_ShaderIndex( char *name ) {
+int G_ShaderIndex( const char *name ) {
 	return G_FindConfigstringIndex( name, CS_SHADERS, MAX_CS_SHADERS, qtrue );
 }
 
@@ -163,7 +163,7 @@ G_TeamCommand
 Broadcasts a command to only a specific team
 ================
 */
-void G_TeamCommand( team_t team, char *cmd ) {
+void G_TeamCommand( team_t team, const char *cmd ) {
 	int i;
 
 	for ( i = 0 ; i < level.maxclients ; i++ ) {
@@ -501,9 +501,7 @@ void G_InitGentity( gentity_t *e ) {
 	e->classname = "noclass";
 	e->s.number = e - g_entities;
 	e->r.ownerNum = ENTITYNUM_NONE;
-	e->aiInactive = 0xffffffff;
 	e->nextthink = 0;
-	memset( e->goalPriority, 0, sizeof( e->goalPriority ) );
 	e->free = NULL;
 
 	// RF, init scripting
@@ -885,7 +883,7 @@ G_ProcessTagConnect
 ==================
 */
 void G_ProcessTagConnect( gentity_t *ent, qboolean clearAngles ) {
-	if ( !ent->tagName ) {
+	if ( ent->tagName[0] == '\0' ) {
 		G_Error( "G_ProcessTagConnect: NULL ent->tagName\n" );
 	}
 	if ( !ent->tagParent ) {
@@ -1043,9 +1041,6 @@ void G_SetEntState( gentity_t *ent, entState_t state ) {
 			}
 		}
 
-		// if this is an mg42, then we should try and calculate mg42 spots again
-		BotCalculateMg42Spots();
-
 		break;
 	case STATE_UNDERCONSTRUCTION:   ent->entstate = STATE_UNDERCONSTRUCTION;
 		ent->s.powerups = STATE_UNDERCONSTRUCTION;
@@ -1128,7 +1123,7 @@ static qboolean G_LoadCampaignsFromFile( const char *filename ) {
 	handle = trap_PC_LoadSource( filename );
 
 	if ( !handle ) {
-		G_Printf( va( S_COLOR_RED "file not found: %s\n", filename ) );
+		G_Printf( S_COLOR_RED "file not found: %s\n", filename );
 		return qfalse;
 	}
 
@@ -1157,7 +1152,7 @@ static qboolean G_LoadCampaignsFromFile( const char *filename ) {
 			}
 
 			if ( *token.string != '{' ) {
-				G_Printf( va( S_COLOR_RED "unexpected token '%s' inside: %s\n", token.string, filename ) );
+				G_Printf( S_COLOR_RED "unexpected token '%s' inside: %s\n", token.string, filename );
 				trap_PC_FreeSource( handle );
 				return qfalse;
 			}
@@ -1165,13 +1160,13 @@ static qboolean G_LoadCampaignsFromFile( const char *filename ) {
 					!Q_stricmp( token.string, "description" ) ||
 					!Q_stricmp( token.string, "image" ) ) {
 			if ( ( s = PC_String_Parse( handle ) ) == NULL ) {
-				G_Printf( va( S_COLOR_RED "unexpected end of file inside: %s\n", filename ) );
+				G_Printf( S_COLOR_RED "unexpected end of file inside: %s\n", filename );
 				trap_PC_FreeSource( handle );
 				return qfalse;
 			}
 		} else if ( !Q_stricmp( token.string, "shortname" ) ) {
 			if ( ( s = PC_String_Parse( handle ) ) == NULL ) {
-				G_Printf( va( S_COLOR_RED "unexpected end of file inside: %s\n", filename ) );
+				G_Printf( S_COLOR_RED "unexpected end of file inside: %s\n", filename );
 				trap_PC_FreeSource( handle );
 				return qfalse;
 			} else {
@@ -1179,7 +1174,7 @@ static qboolean G_LoadCampaignsFromFile( const char *filename ) {
 			}
 		} else if ( !Q_stricmp( token.string, "next" ) ) {
 			if ( ( s = PC_String_Parse( handle ) ) == NULL ) {
-				G_Printf( va( S_COLOR_RED "unexpected end of file inside: %s\n", filename ) );
+				G_Printf( S_COLOR_RED "unexpected end of file inside: %s\n", filename );
 				trap_PC_FreeSource( handle );
 				return qfalse;
 			} else {
@@ -1187,7 +1182,7 @@ static qboolean G_LoadCampaignsFromFile( const char *filename ) {
 			}
 		} else if ( !Q_stricmp( token.string, "type" ) ) {
 			if ( !trap_PC_ReadToken( handle, &token ) ) {
-				G_Printf( va( S_COLOR_RED "unexpected end of file inside: %s\n", filename ) );
+				G_Printf( S_COLOR_RED "unexpected end of file inside: %s\n", filename );
 				trap_PC_FreeSource( handle );
 				return qfalse;
 			}
@@ -1341,7 +1336,7 @@ void G_ParseCampaigns( void ) {
 
 			trap_Argv( 0, buf, sizeof( buf ) );
 
-			if ( !buf ) { // command not found, throw error
+			if ( !*buf ) { // command not found, throw error
 				G_Error( "Usage 'map <mapname>\n'" );
 			}
 

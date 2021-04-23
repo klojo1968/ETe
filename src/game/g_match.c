@@ -87,7 +87,7 @@ void G_loadMatchGame( void ) {
 
 
 // Simple alias for sure-fire print :)
-void G_printFull( char *str, gentity_t *ent ) {
+void G_printFull( const char *str, gentity_t *ent ) {
 	if ( ent != NULL ) {
 		CP( va( "print \"%s\n\"", str ) );
 		CP( va( "cp \"%s\n\"", str ) );
@@ -312,6 +312,12 @@ void G_addStatsHeadShot( gentity_t *attacker, int mod ) {
 //
 // FIXME: Remove everything that maps to WS_MAX to save space
 //
+
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wenum-conversion"
+#endif /* __clang__ */
+
 static const weap_ws_convert_t aWeapMOD[MOD_NUM_MODS] = {
 	{ MOD_UNKNOWN,              WS_MAX },
 	{ MOD_MACHINEGUN,           WS_MG42 },
@@ -389,20 +395,26 @@ static const weap_ws_convert_t aWeapMOD[MOD_NUM_MODS] = {
 
 };
 
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+
 
 // Get right stats index based on weapon mod
 unsigned int G_weapStatIndex_MOD( unsigned int iWeaponMOD ) {
 	unsigned int i;
 
-	for ( i = 0; i < MOD_NUM_MODS; i++ ) if ( iWeaponMOD == aWeapMOD[i].iWeapon ) {
+	for ( i = 0; i < MOD_NUM_MODS; i++ ) {
+		if ( iWeaponMOD == (unsigned)aWeapMOD[i].iWeapon ) {
 			return( aWeapMOD[i].iWS );
 		}
+	}
 	return( WS_MAX );
 }
 
 
 // Generates weapon stat info for given ent
-char *G_createStats( gentity_t *refEnt ) {
+const char *G_createStats( gentity_t *refEnt ) {
 	unsigned int i, dwWeaponMask = 0, dwSkillPointMask = 0;
 	char strWeapInfo[MAX_STRING_CHARS] = {0};
 	char strSkillInfo[MAX_STRING_CHARS] = {0};
@@ -437,7 +449,7 @@ char *G_createStats( gentity_t *refEnt ) {
 		}
 	}
 
-	return( va( "%d %d %d%s %d%s", refEnt - g_entities,
+	return( va( "%d %d %d%s %d%s", (int)(refEnt - g_entities),
 				refEnt->client->sess.rounds,
 				dwWeaponMask,
 				strWeapInfo,

@@ -387,8 +387,8 @@ void UI_LoadPanel_RenderLoadingText( panel_button_t* button ) {
 	uiClientState_t cstate;
 	char downloadName[MAX_INFO_VALUE];
 	char buff[2560];
-	static connstate_t lastConnState;
-	static char lastLoadingText[MAX_INFO_VALUE];
+	//static connstate_t lastConnState;
+	//static char lastLoadingText[MAX_INFO_VALUE];
 	char            *p, *s = "";
 	float y;
 
@@ -400,19 +400,19 @@ void UI_LoadPanel_RenderLoadingText( panel_button_t* button ) {
 
 	trap_Cvar_VariableStringBuffer( "cl_downloadName", downloadName, sizeof( downloadName ) );
 
-	if ( lastConnState > cstate.connState ) {
+	/*if ( lastConnState > cstate.connState ) {
 		lastLoadingText[0] = '\0';
 	}
-	lastConnState = cstate.connState;
+	lastConnState = cstate.connState;*/
 
 	if ( !connect_ownerdraw ) {
 		if ( !trap_Cvar_VariableValue( "ui_connecting" ) ) {
 			switch ( cstate.connState ) {
 			case CA_CONNECTING:
-				s = va( trap_TranslateString( "Awaiting connection...%i" ), cstate.connectPacketCount );
+				s = (char *)va( trap_TranslateString( "Awaiting connection...%i" ), cstate.connectPacketCount );
 				break;
 			case CA_CHALLENGING:
-				s = va( trap_TranslateString( "Awaiting challenge...%i" ), cstate.connectPacketCount );
+				s = (char *)va( trap_TranslateString( "Awaiting challenge...%i" ), cstate.connectPacketCount );
 				break;
 			case CA_DISCONNECTED:
 			case CA_CONNECTED:

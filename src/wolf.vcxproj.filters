@@ -173,15 +173,6 @@
     <ClCompile Include="win32\win_wndproc.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="qcommon\dl_main.c">
-      <Filter>download</Filter>
-    </ClCompile>
-    <ClCompile Include="qcommon\dl_main_curl.c">
-      <Filter>download</Filter>
-    </ClCompile>
-    <ClCompile Include="qcommon\dl_main_stubs.c">
-      <Filter>download</Filter>
-    </ClCompile>
     <ClCompile Include="qcommon\net_ip.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -321,9 +312,6 @@
     </ClInclude>
     <ClInclude Include="..\main\ui\menudef.h">
       <Filter>main\ui</Filter>
-    </ClInclude>
-    <ClInclude Include="qcommon\dl_local.h">
-      <Filter>download</Filter>
     </ClInclude>
     <ClInclude Include="qcommon\dl_public.h">
       <Filter>download</Filter>

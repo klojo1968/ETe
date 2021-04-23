@@ -205,7 +205,7 @@ float R_ProcessLightmap( byte **pic, int in_padding, int width, int height, byte
 
 
 #define LIGHTMAP_SIZE 128
-static const imgFlags_t lightmapFlags = IMGFLAG_LIGHTMAP | IMGFLAG_NOLIGHTSCALE | IMGFLAG_NO_COMPRESSION | IMGFLAG_CLAMPTOEDGE;
+static const imgFlags_t lightmapFlags = IMGFLAG_NOSCALE | IMGFLAG_LIGHTMAP | IMGFLAG_NOLIGHTSCALE | IMGFLAG_NO_COMPRESSION | IMGFLAG_CLAMPTOEDGE;
 //static int lightmapWidth;
 //static int lightmapHeight;
 
@@ -2502,9 +2502,9 @@ static void R_LoadEntities( const lump_t *l ) {
 		if (!Q_stricmp(keyname, "gridsize")) {
 			//sscanf(value, "%f %f %f", &w->lightGridSize[0], &w->lightGridSize[1], &w->lightGridSize[2] );
 			Com_Split( value, v, 3, ' ' );
-			w->lightGridSize[0] = atof( v[0] );
-			w->lightGridSize[1] = atof( v[1] );
-			w->lightGridSize[2] = atof( v[2] );
+			w->lightGridSize[0] = Q_atof( v[0] );
+			w->lightGridSize[1] = Q_atof( v[1] );
+			w->lightGridSize[2] = Q_atof( v[2] );
 			continue;
 		}
 	}
@@ -2539,6 +2539,7 @@ Called directly from cgame
 */
 void RE_LoadWorldMap( const char *name ) {
 	int			i;
+	int32_t		size;
 	dheader_t	*header;
 	union {
 		byte *b;
@@ -2579,9 +2580,12 @@ void RE_LoadWorldMap( const char *name ) {
 	tr.worldRawName[0] = '\0';
 
 	// load it
-	ri.FS_ReadFile( name, &buffer.v );
+	size = ri.FS_ReadFile( name, &buffer.v );
 	if ( !buffer.b ) {
-		ri.Error (ERR_DROP, "RE_LoadWorldMap: %s not found", name);
+		ri.Error( ERR_DROP, "%s: couldn't load %s", __func__, name );
+	}
+	if ( size < sizeof( dheader_t ) ) {
+		ri.Error( ERR_DROP, "%s: %s has truncated header", __func__, name );
 	}
 
 	tr.mapLoading = qtrue;
@@ -2606,15 +2610,21 @@ void RE_LoadWorldMap( const char *name ) {
 	header = (dheader_t *)buffer.b;
 	fileBase = (byte *)header;
 
-	i = LittleLong (header->version);
-	if ( i != BSP_VERSION ) {
-		ri.Error (ERR_DROP, "RE_LoadWorldMap: %s has wrong version number (%i should be %i)", 
-			name, i, BSP_VERSION);
+	// swap all the lumps
+	for ( i = 0; i < sizeof( dheader_t ) / 4; i++ ) {
+		( (int32_t *)header )[i] = LittleLong( ( (int32_t *)header )[i] );
 	}
 
-	// swap all the lumps
-	for (i=0 ; i<sizeof(dheader_t)/4 ; i++) {
-		((int *)header)[i] = LittleLong ( ((int *)header)[i]);
+	if ( header->version != BSP_VERSION ) {
+		ri.Error( ERR_DROP, "%s: %s has wrong version number (%i should be %i)", __func__, name, header->version, BSP_VERSION );
+	}
+
+	for ( i = 0; i < HEADER_LUMPS; i++ ) {
+		int32_t ofs = header->lumps[i].fileofs;
+		int32_t len = header->lumps[i].filelen;
+		if ( (uint32_t)ofs > MAX_QINT || (uint32_t)len > MAX_QINT || ofs + len > size || ofs + len < 0 ) {
+			ri.Error( ERR_DROP, "%s: %s has wrong lump[%i] size/offset", __func__, name, i );
+		}
 	}
 
 	// load into heap

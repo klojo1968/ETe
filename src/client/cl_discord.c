@@ -290,8 +290,8 @@ static void Discord_JoinGame(const char* secret)
 		Cbuf_AddText(va("connect %s\n", ip));
 		break;
 	default:
-		Com_Printf(S_COLOR_CYAN "Discord::JoinGame(%s) -\n");
-		Com_Printf("^5Discord: %1Failed to parse server information from join secret\n");
+		//Com_Printf("^5Discord: %1Failed to parse server information from join secret\n");
+		Com_Printf( S_COLOR_CYAN "Discord: Failed to parse server information from join secret\n");
 		break;
 	}
 }

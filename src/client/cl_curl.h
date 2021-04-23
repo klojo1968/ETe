@@ -48,6 +48,8 @@ extern cvar_t *cl_cURLLib;
 
 #ifdef USE_CURL_DLOPEN
 extern char* (*qcurl_version)(void);
+extern char* (*qcurl_easy_escape)(CURL *curl, const char *string, int length);
+extern void (*qcurl_free)(char *ptr);
 
 extern CURL* (*qcurl_easy_init)(void);
 extern CURLcode (*qcurl_easy_setopt)(CURL *curl, CURLoption option, ...);
@@ -75,6 +77,8 @@ extern CURLMsg *(*qcurl_multi_info_read)(CURLM *multi_handle,
 extern const char *(*qcurl_multi_strerror)(CURLMcode);
 
 extern char* (*dl_curl_version)(void);
+extern char* (*dl_curl_easy_escape)(CURL *curl, const char *string, int length);
+extern void (*dl_curl_free)(char *ptr);
 
 extern CURL* (*dl_curl_easy_init)(void);
 extern CURLcode (*dl_curl_easy_setopt)(CURL *curl, CURLoption option, ...);
@@ -104,6 +108,8 @@ extern const char *(*dl_curl_multi_strerror)(CURLMcode);
 
 #else
 #define qcurl_version curl_version
+#define qcurl_easy_escape curL_easy_escape
+#define qcurl_free curl_free
 
 #define qcurl_easy_init curl_easy_init
 #define qcurl_easy_setopt curl_easy_setopt
@@ -124,6 +130,8 @@ extern const char *(*dl_curl_multi_strerror)(CURLMcode);
 #define qcurl_multi_strerror curl_multi_strerror
 
 #define dl_curl_version curl_version
+#define dl_curl_easy_escape curL_easy_escape
+#define dl_curl_free curl_free
 
 #define dl_curl_easy_init curl_easy_init
 #define dl_curl_easy_setopt curl_easy_setopt
@@ -158,9 +166,9 @@ void DL_Cleanup( void );
 
 typedef struct download_s {
 	char		URL[MAX_OSPATH];
-	char		TempName[MAX_OSPATH+4];
 	char		Name[MAX_OSPATH];
 	char		gameDir[MAX_OSPATH];
+	char		TempName[MAX_OSPATH*2 + 14]; // gameDir + PATH_SEP + Name + ".00000000.tmp"
 	char		progress[MAX_OSPATH+64];
 	CURL		*cURL;
 	CURLM		*cURLM;
@@ -172,6 +180,9 @@ typedef struct download_s {
 
 	struct func_s {
 		char*		(*version)(void);
+		char *		(*easy_escape)(CURL *curl, const char *string, int length);
+		void		(*free)(char *ptr);
+
 		CURL*		(*easy_init)(void);
 		CURLcode	(*easy_setopt)(CURL *curl, CURLoption option, ...);
 		CURLcode	(*easy_perform)(CURL *curl);
@@ -186,6 +197,7 @@ typedef struct download_s {
 		CURLMcode	(*multi_cleanup)(CURLM *multi_handle);
 		CURLMsg		*(*multi_info_read)(CURLM *multi_handle, int *msgs_in_queue);
 		const char	*(*multi_strerror)(CURLMcode);
+
 		void		*lib;
 	} func;
 } download_t;

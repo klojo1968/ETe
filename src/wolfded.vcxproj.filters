@@ -214,9 +214,6 @@
     <ClInclude Include="client\snd_codec.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="qcommon\dl_local.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="qcommon\dl_public.h">
       <Filter>Header Files</Filter>
     </ClInclude>

@@ -197,7 +197,7 @@ void G_refAllReady_cmd( gentity_t *ent ) {
 
 // Changes team lock status
 void G_refLockTeams_cmd( gentity_t *ent, qboolean fLock ) {
-	char *status;
+	const char *status;
 
 	teamInfo[TEAM_AXIS].team_lock = ( TeamCount( -1, TEAM_AXIS ) ) ? fLock : qfalse;
 	teamInfo[TEAM_ALLIES].team_lock = ( TeamCount( -1, TEAM_ALLIES ) ) ? fLock : qfalse;
@@ -335,7 +335,7 @@ void G_refRemove_cmd( gentity_t *ent ) {
 
 // Changes team spectator lock status
 void G_refSpeclockTeams_cmd( gentity_t *ent, qboolean fLock ) {
-	char *status;
+	const char *status;
 
 	// Ensure proper locking
 	G_updateSpecLock( TEAM_AXIS, ( TeamCount( -1, TEAM_AXIS ) ) ? fLock : qfalse );

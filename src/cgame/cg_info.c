@@ -925,7 +925,7 @@ void CG_SpecHelpDraw() {
 		int i, x, y = 480, w, h;
 		int len, maxlen = 0;
 		char format[MAX_STRING_TOKENS], buf[MAX_STRING_TOKENS];
-		char *lines[16];
+		const char *lines[16];
 
 		vec4_t bgColor          = COLOR_BG;         // window
 		vec4_t borderColor      = COLOR_BORDER;     // window

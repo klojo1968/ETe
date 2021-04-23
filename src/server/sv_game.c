@@ -1213,7 +1213,7 @@ SV_GameIsSinglePlayer
 ====================
 */
 qboolean SV_GameIsSinglePlayer( void ) {
-	return( com_gameInfo.spGameTypes & ( 1 << g_gameType->integer ) );
+	return( com_gameInfo.spGameTypes & ( 1 << sv_gameType->integer ) );
 }
 
 /*
@@ -1224,7 +1224,7 @@ SV_GameIsCoop
 ====================
 */
 qboolean SV_GameIsCoop( void ) {
-	return( com_gameInfo.coopGameTypes & ( 1 << g_gameType->integer ) );
+	return( com_gameInfo.coopGameTypes & ( 1 << sv_gameType->integer ) );
 }
 
 /*

@@ -67,7 +67,7 @@ cvar_t  *sv_needpass;
 
 cvar_t *sv_dl_maxRate;
 
-cvar_t* g_gameType;
+cvar_t* sv_gameType;
 
 // Rafael gameskill
 //cvar_t	*sv_gameskill;

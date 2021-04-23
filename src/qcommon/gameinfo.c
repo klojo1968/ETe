@@ -106,11 +106,11 @@ void Com_GetGameInfo( void ) {
 cvar_t *Cvar_Unset( cvar_t *cv );
 
 void Com_UpdateDefaultGametype( void ) {
-	if ( g_gameType ) {
-		Cvar_Unset( g_gameType );
-		g_gameType = NULL;
+	if ( sv_gameType ) {
+		Cvar_Unset( sv_gameType );
+		sv_gameType = NULL;
 	}
-	g_gameType = Cvar_Get( "g_gametype", va( "%i", com_gameInfo.defaultGameType ), CVAR_SERVERINFO | CVAR_LATCH );
+	sv_gameType = Cvar_Get( "g_gametype", va( "%i", com_gameInfo.defaultGameType ), CVAR_SERVERINFO | CVAR_LATCH );
 }
 
 /*
@@ -119,7 +119,7 @@ SV_GameIsSinglePlayer
 ====================
 */
 qboolean Com_GameIsSinglePlayer( void ) {
-	return( com_gameInfo.spGameTypes & ( 1 << g_gameType->integer ) );
+	return( com_gameInfo.spGameTypes & ( 1 << sv_gameType->integer ) );
 }
 
 /*
@@ -130,5 +130,5 @@ This is a modified SinglePlayer, no savegame capability for example
 ====================
 */
 qboolean Com_GameIsCoop( void ) {
-	return( com_gameInfo.coopGameTypes & ( 1 << g_gameType->integer ) );
+	return( com_gameInfo.coopGameTypes & ( 1 << sv_gameType->integer ) );
 }

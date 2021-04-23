@@ -474,6 +474,14 @@ void RE_AddLightToScene( const vec3_t org, float radius, float intensity, float 
 	}
 #endif
 
+	if ( r_dlightSaturation->value != 1.0 )
+	{
+		float luminance = LUMA( r, g, b );
+		r = LERP( luminance, r, r_dlightSaturation->value );
+		g = LERP( luminance, g, r_dlightSaturation->value );
+		b = LERP( luminance, b, r_dlightSaturation->value );
+	}
+
 	// set up a new dlight
 	dl = &backEndData->dlights[ r_numdlights++ ];
 	VectorCopy( org, dl->origin );

@@ -1186,7 +1186,7 @@ redump:
 	case    ZA_SOUND_STEREO:
 		if ( !cinTable[currentHandle].silent ) {
 			if ( cinTable[currentHandle].numQuads == -1 ) {
-				S_Update();
+				S_Update( 333 );
 				Com_DPrintf( "S_Update: Setting rawend to %i\n", s_soundtime );
 				s_rawend[0] = s_soundtime;
 			}

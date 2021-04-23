@@ -100,6 +100,16 @@ const char *WtoA( const LPWSTR s )
 }
 #endif
 
+static qboolean StrIsAscii( const signed char *text, size_t len ) {
+	size_t i;
+	for( i = 0; i < len; i++ ) {
+		if( text[i] < 0 ) {
+			return qfalse;
+		}
+	}
+	return qtrue;
+}
+
 
 /*
 ================
@@ -108,7 +118,7 @@ Sys_DefaultHomePath
 */
 const char *Sys_DefaultHomePath( void ) 
 {
-#ifdef USE_PROFILES
+#ifdef USE_WINDOWS_PROFILES
 	TCHAR szPath[MAX_PATH];
 	static char path[MAX_OSPATH];
 	FARPROC qSHGetFolderPath;
@@ -145,6 +155,14 @@ const char *Sys_DefaultHomePath( void )
 			return NULL;
 		}
 	}
+
+	if ( !StrIsAscii( path, strlen(path) ) )
+	{
+		Com_Printf("Home directory is not an ASCII valid path. Unicode usernames are unsupported\n" );
+		return NULL;
+	}
+
+
 	return path;
 #else
     return NULL;

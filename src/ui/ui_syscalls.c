@@ -31,30 +31,25 @@ If you have questions concerning this license or the applicable additional terms
 // this file is only included when building a dll
 // syscalls.asm is included instead when building a qvm
 
-static int ( QDECL * syscall )( int arg, ... ) = ( int ( QDECL * )( int, ... ) ) - 1;
+static dllSyscall_t syscall = (dllSyscall_t)-1;
 
-#if __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
-void dllEntry( int ( QDECL *syscallptr )( int arg,... ) ) {
+Q_EXPORT void dllEntry( dllSyscall_t syscallptr ) {
 	syscall = syscallptr;
 }
-#if __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
 
 int PASSFLOAT( float x ) {
-	float floatTemp;
-	floatTemp = x;
-	return *(int *)&floatTemp;
+	floatint_t fi;
+	fi.f = x;
+	return fi.i;
 }
 
 void trap_Print( const char *string ) {
 	syscall( UI_PRINT, string );
 }
 
-void trap_Error( const char *string ) {
+void NORETURN trap_Error( const char *string ) {
 	syscall( UI_ERROR, string );
+	exit( 1 );
 }
 
 int trap_Milliseconds( void ) {
@@ -74,9 +69,9 @@ void trap_Cvar_Set( const char *var_name, const char *value ) {
 }
 
 float trap_Cvar_VariableValue( const char *var_name ) {
-	int temp;
-	temp = syscall( UI_CVAR_VARIABLEVALUE, var_name );
-	return ( *(float*)&temp );
+	floatint_t temp;
+	temp.i = syscall( UI_CVAR_VARIABLEVALUE, var_name );
+	return temp.f;
 }
 
 void trap_Cvar_VariableStringBuffer( const char *var_name, char *buffer, int bufsize ) {
@@ -529,4 +524,22 @@ void trap_openURL( const char *s ) {
 
 void trap_GetHunkData( int* hunkused, int* hunkexpected ) {
 	syscall( UI_GETHUNKDATA, hunkused, hunkexpected );
+}
+
+// extension interface
+
+qboolean trap_GetValue( char *value, int valueSize, const char *key ) {
+	return syscall( dll_com_trapGetValue, value, valueSize, key );
+}
+
+void trap_R_AddRefEntityToScene2( const refEntity_t *re ) {
+	syscall( dll_trap_R_AddRefEntityToScene2, re );
+}
+
+void trap_R_AddLinearLightToScene( const vec3_t start, const vec3_t end, float intensity, float r, float g, float b ) {
+	syscall( dll_trap_R_AddLinearLightToScene, start, end, intensity, r, g, b );
+}
+
+void trap_RemoveCommand( const char *cmdName ) {
+	syscall( dll_trap_RemoveCommand, cmdName );
 }

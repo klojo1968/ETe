@@ -105,10 +105,11 @@ void G_SendSystemMessage( sysMsg_t message, int team ) {
 			continue;
 		}
 
-		trap_SendServerCommand( other - g_entities, va( "vschat 0 %d 3 %s 0 0 0", other - g_entities, systemMessages[message] ) );
+		trap_SendServerCommand( other - g_entities, va( "vschat 0 %d 3 %s 0 0 0", (int)(other - g_entities), systemMessages[message] ) );
 	}
 }
 
+#if 0
 void G_CheckForNeededClasses( void ) {
 	qboolean playerClasses[NUM_PLAYER_CLASSES - 1][2];
 	int i, team, cnt;
@@ -235,3 +236,4 @@ void G_CheckMenDown( void ) {
 		G_SendSystemMessage( SM_LOST_MEN, TEAM_ALLIES );
 	}
 }
+#endif

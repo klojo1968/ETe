@@ -155,11 +155,11 @@ void GL_Cull( cullType_t cullType ) {
 
 	glState.faceCulling = cullType;
 
-	if ( cullType == CT_TWO_SIDED ) 
+	if ( cullType == CT_TWO_SIDED )
 	{
 		qglDisable( GL_CULL_FACE );
-	} 
-	else 
+	}
+	else
 	{
 		qboolean cullFront;
 		qglEnable( GL_CULL_FACE );
@@ -461,9 +461,9 @@ static void SetViewportAndScissor( void ) {
 	qglMatrixMode(GL_MODELVIEW);
 
 	// set the window clipping
-	qglViewport( backEnd.viewParms.viewportX, backEnd.viewParms.viewportY, 
+	qglViewport( backEnd.viewParms.viewportX, backEnd.viewParms.viewportY,
 		backEnd.viewParms.viewportWidth, backEnd.viewParms.viewportHeight );
-	qglScissor( backEnd.viewParms.scissorX, backEnd.viewParms.scissorY, 
+	qglScissor( backEnd.viewParms.scissorX, backEnd.viewParms.scissorY,
 		backEnd.viewParms.scissorWidth, backEnd.viewParms.scissorHeight );
 }
 
@@ -618,7 +618,7 @@ static void RB_BeginDrawingView( void ) {
 		backEnd.isHyperspace = qfalse;
 	}
 
-	glState.faceCulling = -1;       // force face culling to set next time
+	glState.faceCulling = -1;		// force face culling to set next time
 
 	// we will only draw a sun if there was sky rendered in this view
 	backEnd.skyRenderedThisView = qfalse;
@@ -643,7 +643,7 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	drawSurf_t		*drawSurf;
 	unsigned int	oldSort;
 	float			oldShaderSort;
-	double			originalTime; // -EC- 
+	double			originalTime; // -EC-
 
 	// save original time for entity shader offsets
 	originalTime = backEnd.refdef.floatTime;
@@ -671,7 +671,7 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 
 		//
 		// change the tess parameters if needed
-		// a "entityMergable" shader is a shader that can have surfaces from seperate
+		// a "entityMergable" shader is a shader that can have surfaces from separate
 		// entities merged into a single batch, like smoke and blood puff sprites
 		if ( ( (oldSort ^ drawSurfs->sort ) & ~QSORT_REFENTITYNUM_MASK ) || !shader->entityMergable ) {
 			if ( oldShader != NULL ) {
@@ -717,7 +717,7 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 #ifdef USE_LEGACY_DLIGHTS
 #ifdef USE_PMLIGHT
 				if ( !r_dlightMode->integer )
-#endif 
+#endif
 				if ( backEnd.currentEntity->needDlights ) {
 					R_TransformDlights( backEnd.refdef.num_dlights, backEnd.refdef.dlights, &backEnd.orientation );
 				}
@@ -725,7 +725,7 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 				if ( backEnd.currentEntity->e.renderfx & RF_DEPTHHACK ) {
 					// hack the depth range to prevent view model from poking into walls
 					depthRange = qtrue;
-					
+
 					if(backEnd.currentEntity->e.renderfx & RF_CROSSHAIR)
 						isCrosshair = qtrue;
 				}
@@ -821,7 +821,7 @@ static void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 #endif // USE_LEGACY_DLIGHTS
 	qglLoadMatrixf( backEnd.viewParms.world.modelMatrix );
 	if ( depthRange ) {
-		qglDepthRange (0, 1);
+		qglDepthRange(0, 1);
 	}
 }
 
@@ -862,7 +862,7 @@ static void RB_RenderLitSurfList( dlight_t* dl ) {
 	qboolean		depthRange, oldDepthRange, isCrosshair, wasCrosshair;
 	const litSurf_t	*litSurf;
 	unsigned int	oldSort;
-	double			originalTime; // -EC- 
+	double			originalTime; // -EC-
 
 	// save original time for entity shader offsets
 	originalTime = backEnd.refdef.floatTime;
@@ -896,7 +896,7 @@ static void RB_RenderLitSurfList( dlight_t* dl ) {
 
 		//
 		// change the tess parameters if needed
-		// a "entityMergable" shader is a shader that can have surfaces from seperate
+		// a "entityMergable" shader is a shader that can have surfaces from separate
 		// entities merged into a single batch, like smoke and blood puff sprites
 		if ( ( (oldSort ^ litSurf->sort) & ~QSORT_REFENTITYNUM_MASK ) || !shader->entityMergable ) {
 			if ( oldShader != NULL ) {
@@ -928,7 +928,7 @@ static void RB_RenderLitSurfList( dlight_t* dl ) {
 				if ( backEnd.currentEntity->e.renderfx & RF_DEPTHHACK ) {
 					// hack the depth range to prevent view model from poking into walls
 					depthRange = qtrue;
-					
+
 					if(backEnd.currentEntity->e.renderfx & RF_CROSSHAIR)
 						isCrosshair = qtrue;
 				}
@@ -1760,7 +1760,7 @@ static const void *RB_ColorMask( const void *data )
 	const colorMaskCommand_t *cmd = data;
 
 	qglColorMask( cmd->rgba[0], cmd->rgba[1], cmd->rgba[2], cmd->rgba[3] );
-	
+
 	return (const void *)(cmd + 1);
 }
 
@@ -1773,11 +1773,11 @@ RB_ClearDepth
 static const void *RB_ClearDepth( const void *data )
 {
 	const clearDepthCommand_t *cmd = data;
-	
+
 	RB_EndSurface();
 
 	qglClear( GL_DEPTH_BUFFER_BIT );
-	
+
 	return (const void *)(cmd + 1);
 }
 
@@ -1838,7 +1838,7 @@ static const void *RB_FinishBloom( const void *data )
 			blitMSfbo = qfalse;
 		}
 
-		if ( r_bloom->integer )
+		if ( r_bloom->integer && qglActiveTextureARB )
 		{
 			if ( !backEnd.doneBloom && backEnd.doneSurfaces )
 			{
@@ -1890,23 +1890,25 @@ static const void *RB_SwapBuffers( const void *data ) {
 	if ( backEnd.screenshotMask && tr.frameCount > 1 ) {
 
 		if ( superSampled ) {
+			qglScissor( 0, 0, gls.captureWidth, gls.captureHeight );
+			qglViewport( 0, 0, gls.captureWidth, gls.captureHeight );
 			FBO_BlitSS();
 		}
 
 		if ( backEnd.screenshotMask & SCREENSHOT_TGA && backEnd.screenshotTGA[0] ) {
-			RB_TakeScreenshot( 0, 0, captureWidth, captureHeight, backEnd.screenshotTGA );
+			RB_TakeScreenshot( 0, 0, gls.captureWidth, gls.captureHeight, backEnd.screenshotTGA );
 			if ( !backEnd.screenShotTGAsilent ) {
 				ri.Printf( PRINT_ALL, "Wrote %s\n", backEnd.screenshotTGA );
 			}
 		}
 		if ( backEnd.screenshotMask & SCREENSHOT_JPG && backEnd.screenshotJPG[0] ) {
-			RB_TakeScreenshotJPEG( 0, 0, captureWidth, captureHeight, backEnd.screenshotJPG );
+			RB_TakeScreenshotJPEG( 0, 0, gls.captureWidth, gls.captureHeight, backEnd.screenshotJPG );
 			if ( !backEnd.screenShotJPGsilent ) {
 				ri.Printf( PRINT_ALL, "Wrote %s\n", backEnd.screenshotJPG );
 			}
 		}
 		if ( backEnd.screenshotMask & SCREENSHOT_BMP && ( backEnd.screenshotBMP[0] || ( backEnd.screenshotMask & SCREENSHOT_BMP_CLIPBOARD ) ) ) {
-			RB_TakeScreenshotBMP( 0, 0, captureWidth, captureHeight, backEnd.screenshotBMP, backEnd.screenshotMask & SCREENSHOT_BMP_CLIPBOARD );
+			RB_TakeScreenshotBMP( 0, 0, gls.captureWidth, gls.captureHeight, backEnd.screenshotBMP, backEnd.screenshotMask & SCREENSHOT_BMP_CLIPBOARD );
 			if ( !backEnd.screenShotBMPsilent ) {
 				ri.Printf( PRINT_ALL, "Wrote %s\n", backEnd.screenshotBMP );
 			}

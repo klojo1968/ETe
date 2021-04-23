@@ -111,8 +111,8 @@ void CG_ParseFireteams() {
 	const char* p;
 	int clnts[2];
 
-	qboolean onFireteam2;
-	qboolean isLeader2;
+	//qboolean onFireteam2;
+	//qboolean isLeader2;
 
 //	qboolean onFireteam =	CG_IsOnFireteam( cg.clientNum ) ? qtrue : qfalse;
 //	qboolean isLeader =		CG_IsFireTeamLeader( cg.clientNum ) ? qtrue : qfalse;
@@ -167,8 +167,8 @@ void CG_ParseFireteams() {
 
 	CG_SortClientFireteam();
 
-	onFireteam2 =   CG_IsOnFireteam( cg.clientNum ) ? qtrue : qfalse;
-	isLeader2 =     CG_IsFireTeamLeader( cg.clientNum ) ? qtrue : qfalse;
+	//onFireteam2 =   CG_IsOnFireteam( cg.clientNum ) ? qtrue : qfalse;
+	//isLeader2 =     CG_IsFireTeamLeader( cg.clientNum ) ? qtrue : qfalse;
 }
 
 // Fireteam that both specified clients are on, if they both are on the same team
@@ -182,9 +182,9 @@ fireteamData_t* CG_IsOnSameFireteam( int clientNum, int clientNum2 ) {
 
 // Fireteam that specified client is leader of, or NULL if none
 fireteamData_t* CG_IsFireTeamLeader( int clientNum ) {
-	fireteamData_t* f;
+	fireteamData_t* f = CG_IsOnFireteam( clientNum );
 
-	if ( !( f = CG_IsOnFireteam( clientNum ) ) ) {
+	if ( !f ) {
 		return NULL;
 	}
 
@@ -287,7 +287,7 @@ void CG_DrawFireTeamOverlay( rectDef_t* rect ) {
 	float h;
 	clientInfo_t* ci = NULL;
 	char buffer[64];
-	fireteamData_t* f = NULL;
+	fireteamData_t* f;
 	int i;
 	vec4_t clr1 =   { .16f,     .2f,    .17f,   .8f };
 	vec4_t clr2 =   { 0.f,      0.f,        0.f,        .2f };
@@ -296,7 +296,8 @@ void CG_DrawFireTeamOverlay( rectDef_t* rect ) {
 	vec4_t bgColor      = { 0.0f, 0.0f, 0.0f, 0.6f };       // window
 	vec4_t borderColor  = { 0.5f, 0.5f, 0.5f, 0.5f };   // window
 
-	if ( !( f = CG_IsOnFireteam( cg.clientNum ) ) ) {
+	f = CG_IsOnFireteam( cg.clientNum );
+	if ( !f ) {
 		return;
 	}
 
@@ -374,7 +375,7 @@ void CG_DrawFireTeamOverlay( rectDef_t* rect ) {
 
 		{
 			vec2_t loc;
-			char *s;
+			const char *s;
 
 			loc[0] = ci->location[0];
 			loc[1] = ci->location[1];
@@ -490,10 +491,10 @@ const char* CG_FireteamGetBoxText() {
 }
 
 qboolean CG_FireteamHasClass( int classnum, qboolean selectedonly ) {
-	fireteamData_t* ft;
+	fireteamData_t* ft = CG_IsOnFireteam( cg.clientNum );
 	int i;
 
-	if ( !( ft = CG_IsOnFireteam( cg.clientNum ) ) ) {
+	if ( !ft ) {
 		return qfalse;
 	}
 

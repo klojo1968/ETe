@@ -45,12 +45,9 @@ should proceed to the next item on the list.
 */
 
 void script_linkentity( gentity_t *ent );
-int G_RemoveNamedBot( char *name );
-
-
 
 qboolean G_ScriptAction_SetModelFromBrushmodel( gentity_t *ent, char *params ) {
-	char    *pString, *token;
+	const char    *pString, *token;
 	char modelname[MAX_QPATH];
 	int i;
 	qboolean solid = qtrue;
@@ -97,7 +94,7 @@ qboolean G_ScriptAction_SetModelFromBrushmodel( gentity_t *ent, char *params ) {
 
 qboolean G_ScriptAction_SetPosition( gentity_t *ent, char *params ) {
 	pathCorner_t* pPathCorner;
-	char    *pString, *token;
+	const char    *pString, *token;
 	gentity_t *target;
 
 	pString = params;
@@ -127,7 +124,7 @@ qboolean G_ScriptAction_SetPosition( gentity_t *ent, char *params ) {
 void SetPlayerSpawn( gentity_t* ent, int spawn, qboolean update );
 
 qboolean G_ScriptAction_SetAutoSpawn( gentity_t* ent, char *params ) {
-	char    *pString, *token;
+	const char    *pString, *token;
 	char spawnname[MAX_QPATH];
 	team_t team;
 	int*    pTeamAutoSpawn;
@@ -167,7 +164,7 @@ qboolean G_ScriptAction_SetAutoSpawn( gentity_t* ent, char *params ) {
 }
 
 qboolean G_ScriptAction_ChangeModel( gentity_t* ent, char *params ) {
-	char    *pString, *token;
+	const char    *pString, *token;
 	char tagname[MAX_QPATH];
 
 	pString = params;
@@ -187,7 +184,7 @@ qboolean G_ScriptAction_ChangeModel( gentity_t* ent, char *params ) {
 }
 
 qboolean G_ScriptAction_ShaderRemap( gentity_t* ent, char *params ) {
-	char    *pString, *token;
+	const char    *pString, *token;
 	float f = level.time * 0.001;
 	char oldShader[256];
 	char newShader[256];
@@ -218,7 +215,7 @@ qboolean G_ScriptAction_ShaderRemapFlush( gentity_t* ent, char *params ) {
 }
 
 qboolean G_ScriptAction_FollowPath( gentity_t* ent, char *params ) {
-	char    *pString, *token;
+	const char    *pString, *token;
 	float speed;
 	qboolean wait = qfalse;
 	int backward;
@@ -346,8 +343,8 @@ qboolean G_ScriptAction_FollowPath( gentity_t* ent, char *params ) {
 }
 
 qboolean G_ScriptAction_AttatchToTrain( gentity_t* ent, char *params ) {
-	char* pString;
-	char* token;
+	const char* pString;
+	const char* token;
 	gentity_t* target;
 
 	pString = params;
@@ -389,8 +386,8 @@ qboolean G_ScriptAction_UnFreezeAnimation( gentity_t* ent, char *params ) {
 }
 
 qboolean G_ScriptAction_StartAnimation( gentity_t* ent, char *params ) {
-	char* pString;
-	char* token;
+	const char* pString;
+	const char* token;
 	qboolean norandom = qfalse;
 	qboolean nolerp = qfalse;
 	qboolean noloop =   qfalse;
@@ -456,9 +453,9 @@ qboolean G_ScriptAction_StartAnimation( gentity_t* ent, char *params ) {
 
 qboolean G_ScriptAction_SetSpeed( gentity_t* ent, char *params ) {
 	vec3_t speed;
-	char* pString;
+	const char* pString;
 	int i;
-	char* token;
+	const char* token;
 	qboolean gravity = qfalse;
 	qboolean lowgravity = qfalse;
 
@@ -501,9 +498,9 @@ qboolean G_ScriptAction_SetSpeed( gentity_t* ent, char *params ) {
 
 qboolean G_ScriptAction_SetRotation( gentity_t* ent, char *params ) {
 	vec3_t angles;
-	char* pString;
+	const char* pString;
 	int i;
-	char* token;
+	const char* token;
 
 	BG_EvaluateTrajectory( &ent->s.apos, level.time, ent->r.currentAngles, qtrue, ent->s.effect2Time  );
 	VectorCopy( ent->r.currentAngles, ent->s.apos.trBase );
@@ -549,7 +546,7 @@ G_ScriptAction_FollowSpline
 */
 
 qboolean G_ScriptAction_FollowSpline( gentity_t* ent, char *params ) {
-	char    *pString, *token;
+	const char    *pString, *token;
 	vec3_t vec;
 	float speed;
 	qboolean wait = qfalse;
@@ -779,7 +776,7 @@ G_ScriptAction_SetChargeTimeFactor
 ===============
 */
 qboolean G_ScriptAction_SetChargeTimeFactor( gentity_t* ent, char *params ) {
-	char    *pString, *token;
+	const char    *pString, *token;
 	float factor;
 	team_t team;
 	char playerclass[64];
@@ -885,7 +882,7 @@ G_ScriptAction_AllowTankExit
 =================
 */
 qboolean G_ScriptAction_AllowTankExit( gentity_t *ent, char *params ) {
-	char        *pString, *token;
+	const char        *pString, *token;
 	pString = params;
 
 	token = COM_ParseExt( &pString, qfalse );
@@ -903,7 +900,7 @@ qboolean G_ScriptAction_AllowTankExit( gentity_t *ent, char *params ) {
 }
 
 qboolean G_ScriptAction_AllowTankEnter( gentity_t *ent, char *params ) {
-	char        *pString, *token;
+	const char        *pString, *token;
 	pString = params;
 
 	token = COM_ParseExt( &pString, qfalse );
@@ -921,7 +918,7 @@ qboolean G_ScriptAction_AllowTankEnter( gentity_t *ent, char *params ) {
 }
 
 qboolean G_ScriptAction_SetTankAmmo( gentity_t *ent, char *params ) {
-	char        *pString, *token;
+	const char        *pString, *token;
 	gentity_t* tank;
 
 	pString = params;
@@ -951,7 +948,7 @@ qboolean G_ScriptAction_SetTankAmmo( gentity_t *ent, char *params ) {
 }
 
 qboolean G_ScriptAction_AddTankAmmo( gentity_t *ent, char *params ) {
-	char        *pString, *token;
+	const char        *pString, *token;
 	gentity_t* tank;
 
 	pString = params;
@@ -988,7 +985,7 @@ qboolean G_ScriptAction_AddTankAmmo( gentity_t *ent, char *params ) {
 }
 
 qboolean G_ScriptAction_DisableMessage( gentity_t *ent, char *params ) {
-	char    *pString, *token;
+	const char    *pString, *token;
 	gentity_t* target = NULL;
 
 	pString = params;
@@ -1011,7 +1008,7 @@ G_ScriptAction_Kill
 =================
 */
 qboolean G_ScriptAction_Kill( gentity_t *ent, char *params ) {
-	char *pString, *token;
+	const char *pString, *token;
 
 	pString = params;
 	token = COM_ParseExt( &pString, qfalse );
@@ -1032,7 +1029,7 @@ G_ScriptAction_SetGlobalFog
 =================
 */
 qboolean G_ScriptAction_SetGlobalFog( gentity_t *ent, char *params ) {
-	char        *pString, *token;
+	const char        *pString, *token;
 	qboolean restore;
 	int duration;
 	vec3_t color;
@@ -1086,7 +1083,7 @@ G_ScriptAction_GotoMarker
 ===============
 */
 qboolean G_ScriptAction_GotoMarker( gentity_t *ent, char *params ) {
-	char    *pString, *token;
+	const char    *pString, *token;
 	gentity_t *target = NULL;
 	vec3_t vec;
 	float speed, dist;
@@ -1306,7 +1303,7 @@ G_ScriptAction_Wait
 =================
 */
 qboolean G_ScriptAction_Wait( gentity_t *ent, char *params ) {
-	char    *pString, *token;
+	const char    *pString, *token;
 	int duration;
 
 	// get the duration
@@ -1358,7 +1355,8 @@ G_ScriptAction_Trigger
 */
 qboolean G_ScriptAction_Trigger( gentity_t *ent, char *params ) {
 	gentity_t *trent;
-	char *pString, name[MAX_QPATH], trigger[MAX_QPATH], *token;
+	const char *pString, *token;
+	char name[MAX_QPATH], trigger[MAX_QPATH];
 	int oldId, i;
 	qboolean terminate, found;
 
@@ -1398,6 +1396,8 @@ qboolean G_ScriptAction_Trigger( gentity_t *ent, char *params ) {
 				continue;
 			}
 			found = qtrue;
+			// ENSINOTE this technically would be broken with bots
+			// especially with omnibot
 			if ( !( trent->r.svFlags & SVF_BOT ) ) {
 				oldId = trent->scriptStatus.scriptId;
 				G_Script_ScriptEvent( trent, "trigger", trigger );
@@ -1405,8 +1405,6 @@ qboolean G_ScriptAction_Trigger( gentity_t *ent, char *params ) {
 				if ( ( trent == ent ) && ( oldId != trent->scriptStatus.scriptId ) ) {
 					terminate = qtrue;
 				}
-			} else {
-				Bot_ScriptEvent( trent->s.number, "trigger", trigger );
 			}
 		}
 		//
@@ -1425,9 +1423,6 @@ qboolean G_ScriptAction_Trigger( gentity_t *ent, char *params ) {
 		}
 		return qtrue;   // always true, as players aren't always there
 	} else if ( !Q_stricmp( name, "activator" ) ) {
-		if ( ent->activator && ent->activator->client && ( ent->activator->r.svFlags & SVF_BOT ) && ent->inuse && ent->activator->client->ps.stats[STAT_HEALTH] > 0 ) {
-			Bot_ScriptEvent( ent->activator - g_entities, "trigger", trigger );
-		}
 		return qtrue;   // always true, as players aren't always there
 	} else {
 		terminate = qfalse;
@@ -1443,8 +1438,6 @@ qboolean G_ScriptAction_Trigger( gentity_t *ent, char *params ) {
 				if ( ( trent == ent ) && ( oldId != trent->scriptStatus.scriptId ) ) {
 					terminate = qtrue;
 				}
-			} else {
-				Bot_ScriptEvent( trent->s.number, "trigger", trigger );
 			}
 		}
 		//
@@ -1473,7 +1466,7 @@ G_ScriptAction_PlaySound
 ================
 */
 qboolean G_ScriptAction_PlaySound( gentity_t *ent, char *params ) {
-	char *pString, *token;
+	const char *pString, *token;
 	char sound[MAX_QPATH];
 	qboolean looping = qfalse;
 	int volume = 255;
@@ -1529,7 +1522,7 @@ G_ScriptAction_FadeAllSounds
 ================
 */
 qboolean G_ScriptAction_FadeAllSounds( gentity_t *ent, char *params ) {
-	char *pString, *token;
+	const char *pString, *token;
 	qboolean up = qfalse;
 	int time;
 
@@ -1542,7 +1535,7 @@ qboolean G_ScriptAction_FadeAllSounds( gentity_t *ent, char *params ) {
 
 	if ( !Q_stricmp( token, "up" ) ) {
 		up = qtrue;
-	} else if ( !Q_stricmp( token, "down" ) )        {
+	} else if ( !Q_stricmp( token, "down" ) ) {
 		up = qfalse;
 	} else
 	{
@@ -1569,7 +1562,7 @@ AICast_ScriptAction_MusicStart
 ==================
 */
 qboolean G_ScriptAction_MusicStart( gentity_t *ent, char *params ) {
-	char    *pString, *token;
+	const char    *pString, *token;
 	char cvarName[MAX_QPATH];
 	int fadeupTime = 0;
 
@@ -1597,7 +1590,7 @@ AICast_ScriptAction_MusicPlay
 ==================
 */
 qboolean G_ScriptAction_MusicPlay( gentity_t *ent, char *params ) {
-	char    *pString, *token;
+	const char    *pString, *token;
 	char cvarName[MAX_QPATH];
 	int fadeupTime = 0;
 
@@ -1620,7 +1613,7 @@ AICast_ScriptAction_MusicStop
 ==================
 */
 qboolean G_ScriptAction_MusicStop( gentity_t *ent, char *params ) {
-	char    *pString, *token;
+	const char    *pString, *token;
 	int fadeoutTime = 0;
 
 	pString = params;
@@ -1640,7 +1633,7 @@ G_ScriptAction_MusicQueue
 ==================
 */
 qboolean G_ScriptAction_MusicQueue( gentity_t *ent, char *params ) {
-	char    *pString, *token;
+	const char    *pString, *token;
 	char cvarName[MAX_QPATH];
 
 	pString = params;
@@ -1661,7 +1654,7 @@ G_ScriptAction_MusicFade
 ==================
 */
 qboolean G_ScriptAction_MusicFade( gentity_t *ent, char *params ) {
-	char    *pString, *token;
+	const char    *pString, *token;
 	int fadeoutTime = 0;
 	float targetVol = 0.0;
 
@@ -1696,7 +1689,8 @@ G_ScriptAction_PlayAnim
 =================
 */
 qboolean G_ScriptAction_PlayAnim( gentity_t *ent, char *params ) {
-	char *pString, *token, tokens[2][MAX_QPATH];
+	const char *pString, *token;
+	char tokens[2][MAX_QPATH];
 	int i;
 	// TTimo might be used uninitialized
 	int endtime = 0;
@@ -1969,10 +1963,9 @@ G_ScriptAction_Accum
 =================
 */
 
-int BotGetTargetDynamite( int *list, int listSize, gentity_t* target );
-
 qboolean G_ScriptAction_Accum( gentity_t *ent, char *params ) {
-	char *pString, *token, lastToken[MAX_QPATH], name[MAX_QPATH];
+	const char *pString, *token;
+	char lastToken[MAX_QPATH], name[MAX_QPATH];
 	int bufferIndex;
 	qboolean terminate, found;
 
@@ -2133,7 +2126,27 @@ qboolean G_ScriptAction_Accum( gentity_t *ent, char *params ) {
 			G_Error( "Scripting: accum %s could not find target\n", lastToken );
 		}
 
-		ent->scriptAccumBuffer[bufferIndex] = BotGetTargetDynamite( NULL, 0, target );
+		{
+			int num = 0, i;
+			// sigh, searching..
+			for (i = MAX_CLIENTS ; i < level.num_entities; ++i)
+			{
+
+				if (!(g_entities[i].etpro_misc_1 & 1))
+				{
+					continue;
+				}
+
+				if (g_entities[i].etpro_misc_2 != target - g_entities)
+				{
+					continue;
+				}
+
+				num++;
+			}
+
+			ent->scriptAccumBuffer[bufferIndex] = num;
+		}
 	} else {
 		G_Error( "Scripting: accum %s: unknown command\n", params );
 	}
@@ -2169,7 +2182,8 @@ G_ScriptAction_GlobalAccum
 =================
 */
 qboolean G_ScriptAction_GlobalAccum( gentity_t *ent, char *params ) {
-	char *pString, *token, lastToken[MAX_QPATH], name[MAX_QPATH];
+	const char *pString, *token;
+	char lastToken[MAX_QPATH], name[MAX_QPATH];
 	int bufferIndex;
 	qboolean terminate, found;
 
@@ -2338,9 +2352,9 @@ G_ScriptAction_Print
 qboolean G_ScriptAction_Print( gentity_t *ent, char *params ) {
 
 	// Default to printing whole string
-	char *printThis = params;
+	const char *printThis = params;
 
-	char *pString, *token;
+	const char *pString, *token;
 	int printLevel = 0;
 
 	if ( !params || !params[0] ) {
@@ -2380,7 +2394,7 @@ G_ScriptAction_FaceAngles
 =================
 */
 qboolean G_ScriptAction_FaceAngles( gentity_t *ent, char *params ) {
-	char *pString, *token;
+	const char *pString, *token;
 	int duration, i;
 	vec3_t diff;
 	vec3_t angles;
@@ -2492,7 +2506,7 @@ G_ScriptAction_TagConnect
 ===================
 */
 qboolean G_ScriptAction_TagConnect( gentity_t *ent, char *params ) {
-	char *pString, *token;
+	const char *pString, *token;
 	gentity_t *parent;
 
 	pString = params;
@@ -2613,7 +2627,7 @@ G_ScriptAction_AxisRespawntime
 ===================
 */
 qboolean G_ScriptAction_AxisRespawntime( gentity_t *ent, char *params ) {
-	char *pString, *token;
+	const char *pString, *token;
 
 	pString = params;
 	token = COM_Parse( &pString );
@@ -2638,7 +2652,7 @@ G_ScriptAction_AlliedRespawntime
 ===================
 */
 qboolean G_ScriptAction_AlliedRespawntime( gentity_t *ent, char *params ) {
-	char *pString, *token;
+	const char *pString, *token;
 
 	pString = params;
 	token = COM_Parse( &pString );
@@ -2663,7 +2677,7 @@ G_ScriptAction_NumberofObjectives
 ===================
 */
 qboolean G_ScriptAction_NumberofObjectives( gentity_t *ent, char *params ) {
-	char *pString, *token;
+	const char *pString, *token;
 	char cs[MAX_STRING_CHARS];
 
 	int num;
@@ -2736,7 +2750,7 @@ G_ScriptAction_ObjectiveStatus
 ===================
 */
 qboolean G_ScriptAction_ObjectiveStatus( gentity_t *ent, char *params ) {
-	char *pString, *token;
+	const char *pString, *token;
 	char cs[MAX_STRING_CHARS];
 	char*   parm;
 
@@ -2777,7 +2791,7 @@ qboolean G_ScriptAction_ObjectiveStatus( gentity_t *ent, char *params ) {
 
 
 qboolean G_ScriptAction_SetDebugLevel( gentity_t *ent, char *params ) {
-	char *pString, *token;
+	const char *pString, *token;
 	int debugLevel = 0;
 
 	if ( !params || !params[0] ) {
@@ -2803,7 +2817,7 @@ qboolean G_ScriptAction_SetDebugLevel( gentity_t *ent, char *params ) {
 
 
 qboolean G_ScriptAction_VoiceAnnounce( gentity_t *ent, char *params ) {
-	char *pString, *token;
+	const char *pString, *token;
 	int num, sysmsg;
 
 	if ( g_gamestate.integer == GS_INTERMISSION ) {
@@ -2846,7 +2860,7 @@ G_ScriptAction_SetWinner
 ===================
 */
 qboolean G_ScriptAction_SetWinner( gentity_t *ent, char *params ) {
-	char *pString, *token;
+	const char *pString, *token;
 	char cs[MAX_STRING_CHARS];
 	int num;
 
@@ -2890,7 +2904,7 @@ G_ScriptAction_SetDefendingTeam
 ===================
 */
 qboolean G_ScriptAction_SetDefendingTeam( gentity_t *ent, char *params ) {
-	char *pString, *token;
+	const char *pString, *token;
 	char cs[MAX_STRING_CHARS];
 	int num;
 
@@ -2926,7 +2940,7 @@ G_ScriptAction_AddTeamVoiceAnnounce
 ===================
 */
 qboolean G_ScriptAction_AddTeamVoiceAnnounce( gentity_t *ent, char *params ) {
-	char *pString, *token;
+	const char *pString, *token;
 	int team, i, index;
 
 	if ( g_gamestate.integer != GS_PLAYING ) {
@@ -2970,7 +2984,7 @@ qboolean G_ScriptAction_AddTeamVoiceAnnounce( gentity_t *ent, char *params ) {
 }
 
 qboolean G_ScriptAction_RemoveTeamVoiceAnnounce( gentity_t *ent, char *params ) {
-	char *pString, *token;
+	const char *pString, *token;
 	int team;
 	int index, i;
 
@@ -3011,7 +3025,7 @@ G_ScriptAction_TeamVoiceAnnounce
 ===================
 */
 qboolean G_ScriptAction_TeamVoiceAnnounce( gentity_t *ent, char *params ) {
-	char *pString, *token;
+	const char *pString, *token;
 	team_t team;
 	gentity_t* tent;
 
@@ -3053,7 +3067,7 @@ G_ScriptAction_Announce
 ===================
 */
 qboolean G_ScriptAction_Announce_Icon( gentity_t *ent, char *params ) {
-	char *pString, *token;
+	const char *pString, *token;
 	int iconnumber;
 
 	if ( g_gamestate.integer == GS_INTERMISSION ) {
@@ -3089,7 +3103,7 @@ G_ScriptAction_Announce
 ===================
 */
 qboolean G_ScriptAction_Announce( gentity_t *ent, char *params ) {
-	char *pString, *token;
+	const char *pString, *token;
 
 	if ( g_gamestate.integer == GS_INTERMISSION ) {
 		return qtrue;
@@ -3135,7 +3149,7 @@ G_ScriptAction_SetRoundTimelimit
 ===================
 */
 qboolean G_ScriptAction_SetRoundTimelimit( gentity_t *ent, char *params ) {
-	char *pString, *token;
+	const char *pString, *token;
 	float nextTimeLimit;
 
 	pString = params;
@@ -3188,7 +3202,8 @@ G_ScriptAction_SetDamagable
 */
 qboolean G_ScriptAction_SetDamagable( gentity_t *ent, char *params ) {
 	gentity_t *target;
-	char *pString, name[MAX_QPATH], state[MAX_QPATH], *token;
+	const char *pString, *token;
+	char name[MAX_QPATH], state[MAX_QPATH];
 	qboolean canDamage;
 
 	pString = params;
@@ -3224,7 +3239,8 @@ G_ScriptAction_SetState
 */
 qboolean G_ScriptAction_SetState( gentity_t *ent, char *params ) {
 	gentity_t *target;
-	char *pString, name[MAX_QPATH], state[MAX_QPATH], *token;
+	const char *pString, *token;
+	char name[MAX_QPATH], state[MAX_QPATH];
 	entState_t entState = STATE_DEFAULT;
 	int hash;
 	qboolean found = qfalse;
@@ -3261,7 +3277,7 @@ qboolean G_ScriptAction_SetState( gentity_t *ent, char *params ) {
 
 		if ( !target ) {
 			if ( !found ) {
-				G_Printf( "^1Warning: setstate called and no entities found\n" );
+				G_Printf( "^1Warning: setstate(%s, %s) called and no entities found\n", name, state );
 			}
 			break;
 		}
@@ -3285,7 +3301,7 @@ G_ScriptAction_StartCam
 ===================
 */
 qboolean G_ScriptAction_StartCam( gentity_t *ent, char *params ) {
-	char *pString, *token;
+	const char *pString, *token;
 	char camfile[256];
 
 	if ( !ent->client ) {
@@ -3320,7 +3336,7 @@ G_ScriptAction_SetInitialCamera
 ===================
 */
 qboolean G_ScriptAction_SetInitialCamera( gentity_t *ent, char *params ) {
-	char *pString, *token;
+	const char *pString, *token;
 	char camfile[256];
 
 	if ( !ent->client ) {
@@ -3374,7 +3390,8 @@ G_ScriptAction_RepairMG42
 */
 qboolean G_ScriptAction_RepairMG42( gentity_t *ent, char *params ) {
 	gentity_t *target;
-	char *pString, name[MAX_QPATH], *token;
+	const char *pString, *token;
+	char name[MAX_QPATH];
 
 	pString = params;
 	token = COM_ParseExt( &pString, qfalse );
@@ -3419,7 +3436,7 @@ G_ScriptAction_SetHQStatus
 ===================
 */
 qboolean G_ScriptAction_SetHQStatus( gentity_t *ent, char *params ) {
-	char    *pString, *token;
+	const char    *pString, *token;
 	team_t team;
 	qboolean exists = qfalse;
 
@@ -3466,7 +3483,7 @@ G_ScriptAction_PrintAccum
 ===================
 */
 qboolean G_ScriptAction_PrintAccum( gentity_t *ent, char *params ) {
-	char *token, *pString;
+	const char *token, *pString;
 	int bufferIndex;
 
 	if ( !params || !params[0] ) {
@@ -3503,7 +3520,7 @@ G_ScriptAction_PrintGlobalAccum
 ===================
 */
 qboolean G_ScriptAction_PrintGlobalAccum( gentity_t *ent, char *params ) {
-	char *token, *pString;
+	const char *token, *pString;
 	int bufferIndex;
 
 	if ( !params || !params[0] ) {
@@ -3528,274 +3545,10 @@ qboolean G_ScriptAction_PrintGlobalAccum( gentity_t *ent, char *params ) {
 	return qtrue;
 }
 
-// Mad Doc - TDF
-/*
-===================
-G_ScriptAction_RemoveBot
-
-  syntax: RemoveBot <botname>
-
-  removes the bot called 'botname'
-===================
-*/
-qboolean G_ScriptAction_RemoveBot( gentity_t *ent, char *params ) {
-	char *token, *pString;
-
-	if ( !params || !params[0] ) {
-		G_Error( "G_ScriptAction_RemoveBot: syntax: RemoveBot <botname>\n" );
-	}
-
-	pString = params;
-
-	token = COM_ParseExt( &pString, qfalse );
-	if ( !token[0] ) {
-		G_Error( "G_ScriptAction_RemoveBot: syntax: RemoveBot <botname>\n" );
-	}
-
-	G_RemoveNamedBot( token );
-	return qtrue;
-}
-
-
-// Mad Doc - TDF
-/*
-===================
-G_ScriptAction_BotDebugging
-
-  syntax: BotDebugging ON/OFF
-
-  toggles bot debugging
-===================
-*/
-qboolean G_ScriptAction_BotDebugging( gentity_t *ent, char *params ) {
-	char *token, *pString;
-
-	if ( !params || !params[0] ) {
-		G_Error( "G_ScriptAction_BotDebugging: syntax: RemoveBot <ON/OFF>\n" );
-	}
-
-	pString = params;
-
-	token = COM_ParseExt( &pString, qfalse );
-	if ( !token[0] ) {
-		G_Error( "G_ScriptAction_BotDebugging: syntax: RemoveBot <ON/OFF>\n" );
-	}
-
-	if ( !Q_stricmp( token, "ON" ) ) {
-		trap_Cvar_Set( "bot_debug", "1" );
-	} else if ( !Q_stricmp( token, "OFF" ) )        {
-		trap_Cvar_Set( "bot_debug", "0" );
-	} else
-	{
-		G_Error( "G_ScriptAction_BotDebugging: syntax: RemoveBot <ON/OFF>\n" );
-	}
-
-	return qtrue;
-}
-
-qboolean G_IsValidBotStateGoal( gentity_t* ent ) {
-	switch ( ent->s.eType ) {
-	case ET_MOVER:
-		if ( !Q_stricmp( ent->classname, "func_static" ) ) {
-			return qfalse;
-		}
-		return qtrue;
-	case ET_TRIGGER_MULTIPLE:
-	case ET_CONSTRUCTIBLE:
-	case ET_OID_TRIGGER:
-	case ET_ATTRACTOR_HINT:
-	case ET_LANDMINE_HINT:
-	case ET_SNIPER_HINT:
-	case ET_LANDMINESPOT_HINT:
-	case ET_EXPLOSIVE:
-		return qtrue;
-	case ET_MG42_BARREL:
-		return qtrue;
-	default:
-		break;
-	}
-	return qfalse;
-}
-
-/*
-=================
-G_ScriptAction_SetBotGoalState
-=================
-*/
-qboolean G_ScriptAction_SetBotGoalState( gentity_t *ent, char *params ) {
-	gentity_t *target;
-	char *pString, name[MAX_QPATH], *token;
-	qboolean entState = qtrue;
-	qboolean teamFlags[2] = { qtrue, qtrue }; // default to both
-	int hash;
-
-	// get the cast name
-	pString = params;
-	token = COM_ParseExt( &pString, qfalse );
-	Q_strncpyz( name, token, sizeof( name ) );
-	if ( !*name ) {
-		G_Error( "G_Scripting: setbotgoalstate must have a name and an state\n" );
-	}
-
-
-	while ( ( token = COM_ParseExt( &pString, qfalse ) ) && token && token[0] ) {
-		if ( !Q_stricmp( token, "axis" ) ) {
-			teamFlags[0] = qtrue;
-			teamFlags[1] = qfalse;
-		} else if ( !Q_stricmp( token, "allies" ) ) {
-			teamFlags[0] = qfalse;
-			teamFlags[1] = qtrue;
-		} else if ( !Q_stricmp( token, "both" ) ) {
-			teamFlags[0] = qtrue;
-			teamFlags[1] = qtrue;
-		} else if ( !Q_stricmp( token, "inactive" ) ) {
-			entState = qtrue;
-		} else if ( !Q_stricmp( token, "active" ) ) {
-			entState = qfalse;
-		} else {
-			G_Error( "G_Scripting: setbotgoalstate with invalid state '%s'\n", token );
-		}
-	}
-
-	// look for an entities
-	target = &g_entities[MAX_CLIENTS - 1];
-	hash = BG_StringHashValue( name );
-	while ( ( target = G_FindByTargetnameFast( target, name, hash ) ) ) {
-		if ( !G_IsValidBotStateGoal( target ) ) {
-			continue;
-		}
-
-		if ( teamFlags[0] ) {
-			if ( entState ) {
-				target->aiInactive |= ( 1 << TEAM_AXIS );
-			} else {
-				target->aiInactive &= ~( 1 << TEAM_AXIS );
-			}
-		}
-		if ( teamFlags[1] ) {
-			if ( entState ) {
-				target->aiInactive |= ( 1 << TEAM_ALLIES );
-			} else {
-				target->aiInactive &= ~( 1 << TEAM_ALLIES );
-			}
-		}
-	}
-
-	return qtrue;
-}
-
-/*
-=================
-G_ScriptAction_SetAASState
-=================
-*/
-qboolean G_ScriptAction_SetAASState( gentity_t *ent, char *params ) {
-	gentity_t* target = NULL;
-	char targetname[MAX_QPATH];
-	char *pString, *token;
-	int flags, hash;
-
-	pString = params;
-	token = COM_ParseExt( &pString, qfalse );
-	if ( !token || !*token ) {
-		G_Error( "G_Scripting: setaasstate must have a name and a state [enabled|disabled|avoid]\n" );
-	}
-
-	Q_strncpyz( targetname, token, sizeof( targetname ) );
-
-	token = COM_ParseExt( &pString, qfalse );
-	if ( !token || !*token ) {
-		G_Error( "G_Scripting: setaasstate must have a name and a state [enabled|disabled|avoid]\n" );
-	}
-
-	if ( !Q_stricmp( token, "enabled" ) ) {
-		flags = AAS_AREA_ENABLED;
-	} else if ( !Q_stricmp( token, "disabled" ) ) {
-		flags = AAS_AREA_DISABLED;
-	} else if ( !Q_stricmp( token, "avoid" ) ) {
-		flags = AAS_AREA_AVOID;
-	} else {
-		G_Error( "G_Scripting: setaasstate: invalid state: %s\n", token );
-		return qtrue;
-	}
-
-	hash = BG_StringHashValue( targetname );
-	while ( ( target = G_FindByTargetnameFast( target, targetname, hash ) ) ) {
-		if ( target->r.linked ) {
-			G_SetAASBlockingEntity( target, flags );
-		} else {
-			trap_LinkEntity( target );
-
-			G_SetAASBlockingEntity( target, flags );
-
-			trap_UnlinkEntity( target );
-		}
-	}
-
-	return qtrue;
-}
-
-
-/*
-=================
-G_ScriptAction_SetBotGoalPriority
-=================
-*/
-qboolean G_ScriptAction_SetBotGoalPriority( gentity_t *ent, char *params ) {
-	gentity_t *target;
-	char *pString, name[MAX_QPATH], *token;
-	qboolean teamFlags[2] = { qtrue, qtrue };   // default to both
-	int priority = 0;
-	int hash;
-
-	// get the cast name
-	pString = params;
-	token = COM_ParseExt( &pString, qfalse );
-	Q_strncpyz( name, token, sizeof( name ) );
-	if ( !*name ) {
-		G_Error( "G_Scripting: setbotgoalpriority must have a name and a level\n" );
-	}
-
-	while ( ( token = COM_ParseExt( &pString, qfalse ) ) && token && token[0] ) {
-		if ( !Q_stricmp( token, "axis" ) ) {
-			teamFlags[0] = qtrue;
-			teamFlags[1] = qfalse;
-		} else if ( !Q_stricmp( token, "allies" ) ) {
-			teamFlags[0] = qfalse;
-			teamFlags[1] = qtrue;
-		} else if ( !Q_stricmp( token, "both" ) ) {
-			teamFlags[0] = qtrue;
-			teamFlags[1] = qtrue;
-		} else if ( !Q_stricmp( token, "level" ) ) {
-			token = COM_ParseExt( &pString, qfalse );
-			if ( !token || !*token ) {
-				G_Error( "G_Scripting: setbotgoalpriority has 'level' with no value\n" );
-			}
-			priority = atoi( token );
-		} else {
-			G_Error( "G_Scripting: setbotgoalpriority with invalid token '%s'\n", token );
-		}
-	}
-
-	// look for an entities
-	target = &g_entities[MAX_CLIENTS - 1];
-	hash = BG_StringHashValue( name );
-	while ( ( target = G_FindByTargetnameFast( target, name, hash ) ) ) {
-		if ( teamFlags[0] ) {
-			target->goalPriority[0] = priority;
-		}
-		if ( teamFlags[1] ) {
-			target->goalPriority[1] = priority;
-		}
-	}
-
-	return qtrue;
-}
-
 void AutoBuildConstruction( gentity_t* constructible );
 
 qboolean G_ScriptAction_Construct( gentity_t *ent, char *params ) {
-	char *pString, *token;
+	const char *pString, *token;
 	gentity_t* constructible;
 
 	pString = params;
@@ -3821,7 +3574,7 @@ G_ScriptAction_ConstructibleClass
 ===================
 */
 qboolean G_ScriptAction_ConstructibleClass( gentity_t *ent, char *params ) {
-	char *pString, *token;
+	const char *pString, *token;
 	int value;
 
 	pString = params;
@@ -3852,7 +3605,7 @@ G_ScriptAction_ConstructibleChargeBarReq
 ===================
 */
 qboolean G_ScriptAction_ConstructibleChargeBarReq( gentity_t *ent, char *params ) {
-	char *pString, *token;
+	const char *pString, *token;
 	float value;
 
 	pString = params;
@@ -3879,7 +3632,7 @@ G_ScriptAction_ConstructibleConstructXPBonus
 ===================
 */
 qboolean G_ScriptAction_ConstructibleConstructXPBonus( gentity_t *ent, char *params ) {
-	char *pString, *token;
+	const char *pString, *token;
 	int value;
 
 	pString = params;
@@ -3906,7 +3659,7 @@ G_ScriptAction_ConstructibleDestructXPBonus
 ===================
 */
 qboolean G_ScriptAction_ConstructibleDestructXPBonus( gentity_t *ent, char *params ) {
-	char *pString, *token;
+	const char *pString, *token;
 	int value;
 
 	pString = params;
@@ -3933,7 +3686,7 @@ G_ScriptAction_ConstructibleHealth
 ===================
 */
 qboolean G_ScriptAction_ConstructibleHealth( gentity_t *ent, char *params ) {
-	char *pString, *token;
+	const char *pString, *token;
 	int value;
 
 	pString = params;
@@ -3961,7 +3714,7 @@ G_ScriptAction_ConstructibleWeaponclass
 ===================
 */
 qboolean G_ScriptAction_ConstructibleWeaponclass( gentity_t *ent, char *params ) {
-	char *pString, *token;
+	const char *pString, *token;
 	int value;
 
 	pString = params;
@@ -3989,7 +3742,7 @@ G_ScriptAction_ConstructibleDuration
 ===================
 */
 qboolean G_ScriptAction_ConstructibleDuration( gentity_t *ent, char *params ) {
-	char *pString, *token;
+	const char *pString, *token;
 	int value;
 
 	pString = params;
@@ -4010,24 +3763,14 @@ qboolean G_ScriptAction_ConstructibleDuration( gentity_t *ent, char *params ) {
 
 /*
 ===================
-G_ScriptAction_SpawnBot
-===================
-*/
-qboolean G_ScriptAction_SpawnBot( gentity_t *ent, char *params ) {
-	//trap_SendConsoleCommand( EXEC_APPEND, va("spawnbot %s\n", params) );
-	G_SpawnBot( params );
-	return qtrue;
-}
-
-/*
-===================
 G_ScriptAction_Cvar
 
   syntax: cvar <cvarName> <operation> <value>
 ===================
 */
 qboolean G_ScriptAction_Cvar( gentity_t *ent, char *params ) {
-	char *pString, *token, lastToken[MAX_QPATH], name[MAX_QPATH], cvarName[MAX_QPATH];
+	const char *pString, *token;
+	char lastToken[MAX_QPATH], name[MAX_QPATH], cvarName[MAX_QPATH];
 	int cvarValue;
 	qboolean terminate, found;
 
@@ -4227,8 +3970,8 @@ available fields can be found in field_t of g_spawn.c, it is quite simple to add
 ===================
 */
 qboolean etpro_ScriptAction_SetValues( gentity_t *ent, char *params ) {
-	char    *token;
-	char    *p;
+	const char    *token;
+	const char    *p;
 	char key[MAX_TOKEN_CHARS], value[MAX_TOKEN_CHARS];
 	int classchanged = 0;
 

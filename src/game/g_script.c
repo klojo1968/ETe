@@ -105,8 +105,6 @@ qboolean G_ScriptAction_RepairMG42( gentity_t *ent, char *params );
 qboolean G_ScriptAction_SetHQStatus( gentity_t *ent, char *params );
 qboolean G_ScriptAction_PrintAccum( gentity_t *ent, char *params );
 qboolean G_ScriptAction_PrintGlobalAccum( gentity_t *ent, char *params );
-qboolean G_ScriptAction_RemoveBot( gentity_t *ent, char *params );
-qboolean G_ScriptAction_BotDebugging( gentity_t *ent, char *params );
 qboolean G_ScriptAction_ObjectiveStatus( gentity_t *ent, char *params );
 qboolean G_ScriptAction_SetModelFromBrushmodel( gentity_t *ent, char *params );
 qboolean G_ScriptAction_SetPosition( gentity_t *ent, char *params );
@@ -120,7 +118,6 @@ qboolean G_ScriptAction_AddTankAmmo( gentity_t *ent, char *params );
 qboolean G_ScriptAction_Kill( gentity_t *ent, char *params );
 qboolean G_ScriptAction_DisableMessage( gentity_t *ent, char *params );
 qboolean G_ScriptAction_SetGlobalFog( gentity_t *ent, char *params );
-qboolean G_ScriptAction_SpawnBot( gentity_t *ent, char *params );
 qboolean G_ScriptAction_Cvar( gentity_t *ent, char *params );
 qboolean G_ScriptAction_AbortIfWarmup( gentity_t *ent, char *params );
 qboolean G_ScriptAction_AbortIfNotSinglePlayer( gentity_t *ent, char *params );
@@ -131,9 +128,6 @@ qboolean G_ScriptAction_MusicQueue( gentity_t *ent, char *params );
 qboolean G_ScriptAction_MusicFade( gentity_t *ent, char *params );
 qboolean G_ScriptAction_SetDebugLevel( gentity_t *ent, char *params );
 qboolean G_ScriptAction_FadeAllSounds( gentity_t *ent, char *params );
-qboolean G_ScriptAction_SetBotGoalState( gentity_t *ent, char *params );
-qboolean G_ScriptAction_SetBotGoalPriority( gentity_t *ent, char *params );
-qboolean G_ScriptAction_SetAASState( gentity_t *ent, char *params );
 qboolean G_ScriptAction_Construct( gentity_t *ent, char *params ) ;
 qboolean G_ScriptAction_ConstructibleClass( gentity_t *ent, char *params ) ;
 qboolean G_ScriptAction_ConstructibleChargeBarReq( gentity_t *ent, char *params ) ;
@@ -209,9 +203,6 @@ g_script_stack_action_t gScriptActions[] =
 
 	{"printaccum",                       G_ScriptAction_PrintAccum},
 	{"printglobalaccum",             G_ScriptAction_PrintGlobalAccum},
-	{"removebot",                        G_ScriptAction_RemoveBot},
-	{"botgebugging",                 G_ScriptAction_BotDebugging},
-	{"spawnbot",                     G_ScriptAction_SpawnBot},
 	{"cvar",                         G_ScriptAction_Cvar},
 	{"abortifwarmup",                    G_ScriptAction_AbortIfWarmup},
 	{"abortifnotsingleplayer",           G_ScriptAction_AbortIfNotSinglePlayer},
@@ -231,9 +222,6 @@ g_script_stack_action_t gScriptActions[] =
 	// fade all sounds up or down
 	{"fadeallsounds",                    G_ScriptAction_FadeAllSounds},
 
-	{"setbotgoalstate",                  G_ScriptAction_SetBotGoalState},
-	{"setbotgoalpriority",               G_ScriptAction_SetBotGoalPriority},
-	{"setaasstate",                      G_ScriptAction_SetAASState},
 	{"construct",                        G_ScriptAction_Construct},
 	{"spawnrubble",                      G_ScriptAction_SpawnRubble},
 	{"setglobalfog",                 G_ScriptAction_SetGlobalFog},
@@ -257,8 +245,8 @@ g_script_stack_action_t gScriptActions[] =
 	{NULL,                              NULL}
 };
 
-qboolean G_Script_EventMatch_StringEqual( g_script_event_t *event, char *eventParm );
-qboolean G_Script_EventMatch_IntInRange( g_script_event_t *event, char *eventParm );
+qboolean G_Script_EventMatch_StringEqual( g_script_event_t *event, const char *eventParm );
+qboolean G_Script_EventMatch_IntInRange( g_script_event_t *event, const char *eventParm );
 
 // the list of events that can start an action sequence
 g_script_event_define_t gScriptEvents[] =
@@ -289,7 +277,7 @@ g_script_event_define_t gScriptEvents[] =
 G_Script_EventMatch_StringEqual
 ===============
 */
-qboolean G_Script_EventMatch_StringEqual( g_script_event_t *event, char *eventParm ) {
+qboolean G_Script_EventMatch_StringEqual( g_script_event_t *event, const char *eventParm ) {
 	if ( eventParm && !Q_stricmp( event->params, eventParm ) ) {
 		return qtrue;
 	} else {
@@ -302,8 +290,8 @@ qboolean G_Script_EventMatch_StringEqual( g_script_event_t *event, char *eventPa
 G_Script_EventMatch_IntInRange
 ===============
 */
-qboolean G_Script_EventMatch_IntInRange( g_script_event_t *event, char *eventParm ) {
-	char *pString, *token;
+qboolean G_Script_EventMatch_IntInRange( g_script_event_t *event, const char *eventParm ) {
+	const char *pString, *token;
 	int int1, int2, eInt;
 
 	// get the cast name
@@ -346,7 +334,7 @@ int G_Script_EventForString( const char *string ) {
 G_Script_ActionForString
 ===============
 */
-g_script_stack_action_t *G_Script_ActionForString( char *string ) {
+g_script_stack_action_t *G_Script_ActionForString( const char *string ) {
 	int i, hash;
 
 	hash = BG_StringHashValue_Lwr( string );
@@ -421,72 +409,14 @@ void G_Script_ScriptLoad( void ) {
 
 /*
 ==============
-G_Script_ParseSpawnbot
-
-  Parses "Spawnbot" command, precaching a custom character if specified
-==============
-*/
-void G_Script_ParseSpawnbot( char **ppScript, char params[], int paramsize ) {
-	qboolean parsingCharacter = qfalse;
-	char        *token;
-
-	token = COM_ParseExt( ppScript, qfalse );
-	while ( token[0] ) {
-		// if we are currently parsing a spawnbot command, check the parms for
-		// a custom character, which we will need to precache on the client
-
-		// did we just see a '/character' parm?
-		if ( parsingCharacter ) {
-
-			parsingCharacter = qfalse;
-
-			G_CharacterIndex( token );
-
-			if ( !BG_FindCharacter( token ) ) {
-				bg_character_t *character = BG_FindFreeCharacter( token );
-
-				Q_strncpyz( character->characterFile, token, sizeof( character->characterFile ) );
-
-				if ( !G_RegisterCharacter( token, character ) ) {
-					G_Error( "ERROR: G_Script_ParseSpawnbot: failed to load character file '%s'\n", token );
-				}
-			}
-
-#ifdef DEBUG
-			G_DPrintf( "precached character %s\n", token );
-#endif
-		} else if ( !Q_stricmp( token, "/character" ) ) {
-			parsingCharacter = qtrue;
-		}
-
-		if ( strlen( params ) ) {    // add a space between each param
-			Q_strcat( params, paramsize, " " );
-		}
-
-		if ( strrchr( token,' ' ) ) { // need to wrap this param in quotes since it has more than one word
-			Q_strcat( params, paramsize, "\"" );
-		}
-
-		Q_strcat( params, paramsize, token );
-
-		if ( strrchr( token,' ' ) ) { // need to wrap this param in quotes since it has more than one word
-			Q_strcat( params, paramsize, "\"" );
-		}
-
-		token = COM_ParseExt( ppScript, qfalse );
-	}
-}
-
-/*
-==============
 G_Script_ScriptParse
 
   Parses the script for the given entity
 ==============
 */
 void G_Script_ScriptParse( gentity_t *ent ) {
-	char        *pScript;
-	char        *token;
+	const char        *pScript;
+	/*const */char        *token;
 	qboolean wantName;
 	qboolean inScript;
 	int eventNum;
@@ -545,14 +475,6 @@ void G_Script_ScriptParse( gentity_t *ent ) {
 				G_Error( "G_Script_ScriptParse(), Error (line %d): '{' found, NAME expected.\n", COM_GetCurrentParseLine() );
 			}
 		} else if ( wantName )   {
-			if ( !Q_stricmp( token, "bot" ) ) {
-				// a bot, skip this whole entry
-				SkipRestOfLine( &pScript );
-				// skip this section
-				SkipBracedSection( &pScript, 0 ); // ENSI TODO not sure if this is right to use no depth here
-				//
-				continue;
-			}
 			if ( !Q_stricmp( token, "entity" ) ) {
 				// this is an entity, so go back to look for a name
 				continue;
@@ -631,11 +553,6 @@ void G_Script_ScriptParse( gentity_t *ent ) {
 							Q_strcat( params, sizeof( params ), "\"" );
 						}
 					}
-				} else
-				// hackly precaching of custom characters
-				if ( !Q_stricmp( token, "spawnbot" ) ) {
-					// this is fairly indepth, so I'll move it to a separate function for readability
-					G_Script_ParseSpawnbot( &pScript, params, MAX_INFO_STRING );
 				} else  {
 					token = COM_ParseExt( &pScript, qfalse );
 					for ( i = 0; token[0]; i++ )
@@ -770,7 +687,7 @@ G_Script_GetEventIndex
   xkan, 10/28/2002 - extracted from G_Script_ScriptEvent.
 ================
 */
-int G_Script_GetEventIndex( gentity_t *ent, char *eventStr, char *params ) {
+int G_Script_GetEventIndex( gentity_t *ent, const char *eventStr, const char *params ) {
 	int i, eventNum = -1;
 
 	int hash = BG_StringHashValue_Lwr( eventStr );
@@ -814,7 +731,7 @@ G_Script_ScriptEvent
   An event has occured, for which a script may exist
 ================
 */
-void G_Script_ScriptEvent( gentity_t *ent, char *eventStr, char *params ) {
+void G_Script_ScriptEvent( gentity_t *ent, const char *eventStr, const char *params ) {
 	int i = G_Script_GetEventIndex( ent, eventStr, params );
 
 	if ( i >= 0 ) {
@@ -947,27 +864,7 @@ void script_mover_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacke
 	self->die = NULL;
 }
 
-void script_mover_set_blocking( gentity_t *ent ) {
-	if ( ent->r.linked && ent->r.contents == CONTENTS_SOLID ) {
-		G_SetAASBlockingEntity( ent, AAS_AREA_AVOID );
-	}
-}
-
-void script_mover_aas_blocking( gentity_t *ent ) {
-	if ( ent->timestamp <= level.time ) {
-		// are we moving?
-		if ( ent->s.pos.trType != TR_STATIONARY /*VectorLengthSquared( ent->s.pos.trDelta )*/ ) {
-			// never block while moving
-			if ( ent->AASblocking ) {
-				G_SetAASBlockingEntity( ent, AAS_AREA_ENABLED );
-			}
-		} else if ( !VectorCompare( ent->s.pos.trBase, ent->botAreaPos ) ) {
-			script_mover_set_blocking( ent );
-			VectorCopy( ent->s.pos.trBase, ent->botAreaPos );
-		}
-		ent->timestamp = level.time + 500;
-	}
-
+void script_mover_think( gentity_t *ent ) {
 	if ( ent->spawnflags & 128 ) {
 		if ( !ent->tankLink ) {
 			if ( ent->mg42weapHeat ) {
@@ -993,7 +890,7 @@ void script_mover_aas_blocking( gentity_t *ent ) {
 
 void script_mover_spawn( gentity_t *ent ) {
 	if ( ent->spawnflags & 128 ) {
-		if ( !ent->tagBuffer ) {
+		if ( ent->tagBuffer[0] == '\0' ) {
 			ent->nextTrain = ent;
 		} else {
 			gentity_t* tent = G_FindByTargetname( NULL, ent->tagBuffer );
@@ -1018,9 +915,7 @@ void script_mover_spawn( gentity_t *ent ) {
 
 	script_linkentity( ent );
 
-	// now start thinking process which controls AAS interaction
-	script_mover_set_blocking( ent );
-	ent->think = script_mover_aas_blocking;
+	ent->think = script_mover_think;
 	ent->nextthink = level.time + 200;
 }
 
@@ -1146,7 +1041,7 @@ void SP_script_mover( gentity_t *ent ) {
 
 		if ( G_SpawnString( "description", "", &s ) ) {
 			trap_GetConfigstring( CS_SCRIPT_MOVER_NAMES, cs, sizeof( cs ) );
-			Info_SetValueForKey( cs, va( "%i",ent - g_entities ), s );
+			Info_SetValueForKey( cs, va( "%i",(int)(ent - g_entities) ), s );
 			trap_SetConfigstring( CS_SCRIPT_MOVER_NAMES, cs );
 		}
 	} else {

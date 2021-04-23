@@ -31,30 +31,25 @@ If you have questions concerning this license or the applicable additional terms
 // this file is only included when building a dll
 // g_syscalls.asm is included instead when building a qvm
 
-static int ( QDECL * syscall )( int arg, ... ) = ( int ( QDECL * )( int, ... ) ) - 1;
+static dllSyscall_t syscall = (dllSyscall_t)-1;
 
-#if __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
-void dllEntry( int ( QDECL *syscallptr )( int arg,... ) ) {
+Q_EXPORT void dllEntry( dllSyscall_t syscallptr ) {
 	syscall = syscallptr;
 }
-#if __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
 
 int PASSFLOAT( float x ) {
-	float floatTemp;
-	floatTemp = x;
-	return *(int *)&floatTemp;
+	floatint_t fi;
+	fi.f = x;
+	return fi.i;
 }
 
 void    trap_Printf( const char *fmt ) {
 	syscall( G_PRINT, fmt );
 }
 
-void    trap_Error( const char *fmt ) {
+void    NORETURN trap_Error( const char *fmt ) {
 	syscall( G_ERROR, fmt );
+	exit( 1 );
 }
 
 int     trap_Milliseconds( void ) {
@@ -410,9 +405,9 @@ void trap_AAS_PresenceTypeBoundingBox( int presencetype, vec3_t mins, vec3_t max
 }
 
 float trap_AAS_Time( void ) {
-	int temp;
-	temp = syscall( BOTLIB_AAS_TIME );
-	return ( *(float*)&temp );
+	floatint_t temp;
+	temp.i = syscall( BOTLIB_AAS_TIME );
+	return temp.f;
 }
 
 // Ridah, multiple AAS files
@@ -674,15 +669,15 @@ void trap_BotFreeCharacter( int character ) {
 }
 
 float trap_Characteristic_Float( int character, int index ) {
-	int temp;
-	temp = syscall( BOTLIB_AI_CHARACTERISTIC_FLOAT, character, index );
-	return ( *(float*)&temp );
+	floatint_t temp;
+	temp.i = syscall( BOTLIB_AI_CHARACTERISTIC_FLOAT, character, index );
+	return temp.f;
 }
 
 float trap_Characteristic_BFloat( int character, int index, float min, float max ) {
-	int temp;
-	temp = syscall( BOTLIB_AI_CHARACTERISTIC_BFLOAT, character, index, PASSFLOAT( min ), PASSFLOAT( max ) );
-	return ( *(float*)&temp );
+	floatint_t temp;
+	temp.i = syscall( BOTLIB_AI_CHARACTERISTIC_BFLOAT, character, index, PASSFLOAT( min ), PASSFLOAT( max ) );
+	return temp.f;
 }
 
 int trap_Characteristic_Integer( int character, int index ) {
@@ -852,9 +847,9 @@ int trap_BotGetMapLocationGoal( char *name, void /* struct bot_goal_s */ *goal )
 }
 
 float trap_BotAvoidGoalTime( int goalstate, int number ) {
-	int temp;
-	temp = syscall( BOTLIB_AI_AVOID_GOAL_TIME, goalstate, number );
-	return ( *(float*)&temp );
+	floatint_t temp;
+	temp.i = syscall( BOTLIB_AI_AVOID_GOAL_TIME, goalstate, number );
+	return temp.f;
 }
 
 void trap_BotInitLevelItems( void ) {
@@ -971,7 +966,7 @@ int trap_GeneticParentsAndChildSelection( int numranks, float *ranks, int *paren
 	return syscall( BOTLIB_AI_GENETIC_PARENTS_AND_CHILD_SELECTION, numranks, ranks, parent1, parent2, child );
 }
 
-void trap_PbStat( int clientNum, char *category, char *values ) {
+void trap_PbStat( int clientNum, const char *category, const char *values ) {
 	syscall( PB_STAT_REPORT, clientNum, category, values ) ;
 }
 
@@ -981,4 +976,10 @@ void trap_SendMessage( int clientNum, char *buf, int buflen ) {
 
 messageStatus_t trap_MessageStatus( int clientNum ) {
 	return syscall( G_MESSAGESTATUS, clientNum );
+}
+
+// extension interface
+
+qboolean trap_GetValue( char *value, int valueSize, const char *key ) {
+	return syscall( dll_com_trapGetValue, value, valueSize, key );
 }

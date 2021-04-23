@@ -152,6 +152,24 @@ void CG_ParseServerinfo( void ) {
 	trap_Cvar_Set( "cg_ui_voteFlags", ( ( authLevel.integer == RL_NONE ) ? Info_ValueForKey( info, "voteFlags" ) : "0" ) );
 }
 
+void CG_ParseSysteminfo( void ) {
+	const char	*info;
+
+	info = CG_ConfigString( CS_SYSTEMINFO );
+
+	cgs.pmove_fixed = ( atoi( Info_ValueForKey( info, "pmove_fixed" ) ) ) ? qtrue : qfalse;
+	cgs.pmove_msec = atoi( Info_ValueForKey( info, "pmove_msec" ) );
+	if ( cgs.pmove_msec < 8 ) {
+		cgs.pmove_msec = 8;
+	} else if ( cgs.pmove_msec > 33 ) {
+		cgs.pmove_msec = 33;
+	}
+
+#ifdef ALLOW_GSYNC
+	cgs.synchronousClients = ( atoi( Info_ValueForKey( info, "g_synchronousClients" ) ) ) ? qtrue : qfalse;
+#endif
+}
+
 /*
 ==================
 CG_ParseWarmup
@@ -383,16 +401,16 @@ CG_ParseScreenFade
 */
 static void CG_ParseScreenFade( void ) {
 	const char  *info;
-	char *token;
+	const char *token;
 
 	info = CG_ConfigString( CS_SCREENFADE );
 
-	token = COM_Parse( (char **)&info );
+	token = COM_Parse( &info );
 	cgs.fadeAlpha = atof( token );
 
-	token = COM_Parse( (char **)&info );
+	token = COM_Parse( &info );
 	cgs.fadeStartTime = atoi( token );
-	token = COM_Parse( (char **)&info );
+	token = COM_Parse( &info );
 	cgs.fadeDuration = atoi( token );
 
 	if ( cgs.fadeStartTime + cgs.fadeDuration < cg.time ) {
@@ -413,19 +431,19 @@ CG_ParseFog
 */
 static void CG_ParseFog( void ) {
 	const char  *info;
-	char *token;
+	const char *token;
 	float ne, fa, r, g, b, density;
 	int time;
 
 	info = CG_ConfigString( CS_FOGVARS );
 
-	token = COM_Parse( (char **)&info );    ne = atof( token );
-	token = COM_Parse( (char **)&info );    fa = atof( token );
-	token = COM_Parse( (char **)&info );    density = atof( token );
-	token = COM_Parse( (char **)&info );    r = atof( token );
-	token = COM_Parse( (char **)&info );    g = atof( token );
-	token = COM_Parse( (char **)&info );    b = atof( token );
-	token = COM_Parse( (char **)&info );    time = atoi( token );
+	token = COM_Parse( &info );    ne = atof( token );
+	token = COM_Parse( &info );    fa = atof( token );
+	token = COM_Parse( &info );    density = atof( token );
+	token = COM_Parse( &info );    r = atof( token );
+	token = COM_Parse( &info );    g = atof( token );
+	token = COM_Parse( &info );    b = atof( token );
+	token = COM_Parse( &info );    time = atoi( token );
 
 	if ( fa ) {    // far of '0' from a target_fog means "return to map fog"
 		trap_R_SetFog( FOG_SERVER, (int)ne, (int)fa, r, g, b, density + .1 );
@@ -444,16 +462,16 @@ static void CG_ParseGlobalFog( void ) {
 
 	info = CG_ConfigString( CS_GLOBALFOGVARS );
 
-	token = COM_Parse( (char **)&info );    restore = atoi( token );
-	token = COM_Parse( (char **)&info );    duration = atoi( token );
+	token = COM_Parse( &info );    restore = atoi( token );
+	token = COM_Parse( &info );    duration = atoi( token );
 
 	if ( restore ) {
 		trap_R_SetGlobalFog( qtrue, duration, 0.f, 0.f, 0.f, 0 );
 	} else {
-		token = COM_Parse( (char **)&info );    r = atof( token );
-		token = COM_Parse( (char **)&info );    g = atof( token );
-		token = COM_Parse( (char **)&info );    b = atof( token );
-		token = COM_Parse( (char **)&info );    depthForOpaque = atof( token );
+		token = COM_Parse( &info );    r = atof( token );
+		token = COM_Parse( &info );    g = atof( token );
+		token = COM_Parse( &info );    b = atof( token );
+		token = COM_Parse( &info );    depthForOpaque = atof( token );
 
 		trap_R_SetGlobalFog( qfalse, duration, r, g, b, depthForOpaque );
 	}
@@ -614,6 +632,8 @@ static void CG_ConfigStringModified( void ) {
 		CG_StartMusic();
 	} else if ( num == CS_MUSIC_QUEUE ) {
 		CG_QueueMusic();
+	} else if ( num == CS_SYSTEMINFO ) {
+		CG_ParseSysteminfo();
 	} else if ( num == CS_SERVERINFO ) {
 		CG_ParseServerinfo();
 	} else if ( num == CS_WARMUP ) {
@@ -1044,8 +1064,8 @@ int CG_ParseVoiceChats( const char *filename, voiceChatList_t *voiceChatList, in
 	int current = 0;
 	fileHandle_t f;
 	char buf[MAX_VOICEFILESIZE];
-	char **p, *ptr;
-	char *token;
+	const char **p, *ptr;
+	const char *token;
 	voiceChat_t *voiceChats;
 	qboolean compress;
 
@@ -1179,7 +1199,7 @@ void CG_LoadVoiceChats( void ) {
 CG_HeadModelVoiceChats
 =================
 */
-int CG_HeadModelVoiceChats( char *filename ) {
+/*int CG_HeadModelVoiceChats( char *filename ) {
 	int len, i;
 	fileHandle_t f;
 	char buf[MAX_VOICEFILESIZE];
@@ -1218,7 +1238,7 @@ int CG_HeadModelVoiceChats( char *filename ) {
 	//FIXME: maybe try to load the .voice file which name is stored in token?
 
 	return -1;
-}
+}*/
 
 
 /*
@@ -1677,7 +1697,7 @@ void CG_parseWeaponStatsGS_cmd( void ) {
 	Q_strncpyz( gs->strRank, va( "%-13s %d", ( ( ci->team == TEAM_AXIS ) ? rankNames_Axis : rankNames_Allies )[ci->rank], xp ), sizeof( gs->strRank ) );
 
 	if ( skillMask != 0 ) {
-		char *str;
+		const char *str;
 
 		for ( i = SK_BATTLE_SENSE; i < SK_NUM_SKILLS; i++ ) {
 
@@ -1702,7 +1722,7 @@ void CG_parseWeaponStatsGS_cmd( void ) {
 
 
 // Client-side stat presentation
-void CG_parseWeaponStats_cmd( void( txt_dump ) ( char * ) ) {
+void CG_parseWeaponStats_cmd( void( txt_dump ) ( const char * ) ) {
 	clientInfo_t *ci;
 	qboolean fFull = ( txt_dump != CG_printWindow );
 	qboolean fHasStats = qfalse;
@@ -1806,7 +1826,7 @@ void CG_parseWeaponStats_cmd( void( txt_dump ) ( char * ) ) {
 	if ( dwSkillPointMask == 0 ) {
 		txt_dump( "^3No skills acquired!\n" );
 	} else {
-		char *str;
+		const char *str;
 
 		for ( i = SK_BATTLE_SENSE; i < SK_NUM_SKILLS; i++ ) {
 
@@ -1829,7 +1849,7 @@ void CG_parseWeaponStats_cmd( void( txt_dump ) ( char * ) ) {
 	}
 }
 
-void CG_parseBestShotsStats_cmd( qboolean doTop, void( txt_dump ) ( char * ) ) {
+void CG_parseBestShotsStats_cmd( qboolean doTop, void( txt_dump ) ( const char * ) ) {
 	int iArg = 1;
 	qboolean fFull = ( txt_dump != CG_printWindow );
 
@@ -1872,7 +1892,7 @@ void CG_parseBestShotsStats_cmd( qboolean doTop, void( txt_dump ) ( char * ) ) {
 	}
 }
 
-void CG_parseTopShotsStats_cmd( qboolean doTop, void( txt_dump ) ( char * ) ) {
+void CG_parseTopShotsStats_cmd( qboolean doTop, void( txt_dump ) ( const char * ) ) {
 	int i, iArg = 1;
 	int cClients = atoi( CG_Argv( iArg++ ) );
 	int iWeap = atoi( CG_Argv( iArg++ ) );
@@ -1934,7 +1954,7 @@ void CG_scores_cmd( void ) {
 	}
 }
 
-void CG_printFile( char *str ) {
+static void CG_printFile( const char *str ) {
 	CG_Printf( str );
 	if ( cgs.dumpStatsFile > 0 ) {
 		char s[MAX_STRING_CHARS];
@@ -1948,7 +1968,7 @@ void CG_dumpStats( void ) {
 	qtime_t ct;
 	qboolean fDoScores = qfalse;
 	const char *info = CG_ConfigString( CS_SERVERINFO );
-	char *s = va( "^3>>> %s: ^2%s\n\n", CG_TranslateString( "Map" ), Info_ValueForKey( info, "mapname" ) );
+	const char *s = va( "^3>>> %s: ^2%s\n\n", CG_TranslateString( "Map" ), Info_ValueForKey( info, "mapname" ) );
 
 	trap_RealTime( &ct );
 	// /me holds breath (using circular va() buffer)
@@ -2055,7 +2075,7 @@ static void CG_ServerCommand( void ) {
 	if ( !Q_stricmp( cmd, "cp" ) ) {
 		// NERVE - SMF
 		int args = trap_Argc();
-		char *s;
+		const char *s;
 
 		if ( args >= 3 ) {
 			s = CG_TranslateString( CG_Argv( 1 ) );
@@ -2362,7 +2382,7 @@ static void CG_ServerCommand( void ) {
 		int fadeTime = 0;   // default to instant start
 
 		Q_strncpyz( text, CG_Argv( 2 ), MAX_SAY_TEXT );
-		if ( text && strlen( text ) ) {
+		if ( *text ) {
 			fadeTime = atoi( text );
 		}
 
@@ -2374,7 +2394,7 @@ static void CG_ServerCommand( void ) {
 		int fadeTime = 0;   // default to instant start
 
 		Q_strncpyz( text, CG_Argv( 2 ), MAX_SAY_TEXT );
-		if ( text && strlen( text ) ) {
+		if ( *text ) {
 			fadeTime = atoi( text );
 		}
 
@@ -2386,7 +2406,7 @@ static void CG_ServerCommand( void ) {
 		int fadeTime = 0;   // default to instant stop
 
 		Q_strncpyz( text, CG_Argv( 1 ), MAX_SAY_TEXT );
-		if ( text && strlen( text ) ) {
+		if ( *text ) {
 			fadeTime = atoi( text );
 		}
 

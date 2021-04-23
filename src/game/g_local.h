@@ -34,8 +34,6 @@ If you have questions concerning this license or the applicable additional terms
 #include "bg_public.h"
 #include "g_public.h"
 
-#include "../game/be_aas.h"
-
 //==================================================================
 
 // the "gameversion" client command will print this plus compile date
@@ -123,20 +121,11 @@ typedef enum {
 #define ALLOW_ALLIED_TEAM       2
 #define ALLOW_DISGUISED_CVOPS   4
 
-// RF, different types of dynamic area flags
-#define AAS_AREA_ENABLED                    0x0000
-#define AAS_AREA_DISABLED                   0x0001
-#define AAS_AREA_AVOID                      0x0010
-#define AAS_AREA_TEAM_AXIS                  0x0020
-#define AAS_AREA_TEAM_ALLIES                0x0040
-#define AAS_AREA_TEAM_AXIS_DISGUISED        0x0080
-#define AAS_AREA_TEAM_ALLIES_DISGUISED      0x0100
-
 //============================================================================
 
 typedef struct gentity_s gentity_t;
 typedef struct gclient_s gclient_t;
-typedef struct g_serverEntity_s g_serverEntity_t;
+//typedef struct g_serverEntity_s g_serverEntity_t;
 
 //====================================================================
 //
@@ -179,7 +168,7 @@ typedef struct
 typedef struct
 {
 	char        *eventStr;
-	qboolean ( *eventMatch )( g_script_event_t *event, char *eventParm );
+	qboolean ( *eventMatch )( g_script_event_t *event, const char *eventParm );
 	int hash;
 } g_script_event_define_t;
 //
@@ -202,7 +191,7 @@ typedef struct
 //
 #define G_MAX_SCRIPT_ACCUM_BUFFERS 10
 //
-void G_Script_ScriptEvent( gentity_t *ent, char *eventStr, char *params );
+void G_Script_ScriptEvent( gentity_t *ent, const char *eventStr, const char *params );
 //====================================================================
 
 typedef struct g_constructible_stats_s {
@@ -225,7 +214,7 @@ int G_GetWeaponClassForMOD( meansOfDeath_t mod );
 
 #define MAX_NETNAME         36
 
-#define CFOFS( x ) ( (int)&( ( (gclient_t *)0 )->x ) )
+#define CFOFS( x ) (offsetof(gclient_t, x))
 
 #define MAX_COMMANDER_TEAM_SOUNDS 16
 
@@ -431,8 +420,6 @@ struct gentity_s {
 	// the accumulation buffer
 	int scriptAccumBuffer[G_MAX_SCRIPT_ACCUM_BUFFERS];
 
-	qboolean AASblocking;
-	vec3_t AASblocking_mins, AASblocking_maxs;
 	float accuracy;
 
 	char tagName[MAX_QPATH];            // name of the tag we are attached to
@@ -459,16 +446,7 @@ struct gentity_s {
 	gentity_t   *dmgparent;
 	qboolean dmginloop;
 
-	// RF, used for linking of static entities for faster searching
-	gentity_t   *botNextStaticEntity;
 	int spawnCount;                         // incremented each time this entity is spawned
-	int botIgnoreTime, awaitingHelpTime;
-	int botIgnoreHealthTime, botIgnoreAmmoTime;
-	int botAltGoalTime;
-	vec3_t botGetAreaPos;
-	int botGetAreaNum;
-	int aiInactive;             // bots should ignore this goal
-	int goalPriority[2];
 
 	int tagNumber;              // Gordon: "handle" to a tag header
 
@@ -479,16 +457,6 @@ struct gentity_s {
 	float backdelta;
 	qboolean back;
 	qboolean moving;
-
-	int botLastAttackedTime;
-	int botLastAttackedEnt;
-
-	int botAreaNum;                 // last checked area num
-	vec3_t botAreaPos;
-
-	// TAT 10/13/2002 - for seek cover sequence - we need a pointer to a server entity
-	//		@ARNOUT - does this screw up the save game?
-	g_serverEntity_t    *serverEntity;
 
 	// What sort of surface are we standing on?
 	int surfaceFlags;
@@ -506,7 +474,8 @@ struct gentity_s {
 	g_constructible_stats_t constructibleStats;
 
 	//bani
-	int etpro_misc_1;
+	int etpro_misc_1; // bit 0 = it's a planted/ticking dynamite
+	int	etpro_misc_2; // the entityNumber of the (last) planted dyna. bit strange it's only 1 dyna..
 };
 
 // Ridah
@@ -854,9 +823,6 @@ struct gclient_s {
 	gentity_t       *tempHead;  // Gordon: storing a temporary head for bullet head shot detection
 	gentity_t       *tempLeg;   // Arnout: storing a temporary leg for bullet head shot detection
 
-	int botSlotNumber;              // the slot the bot falls into (set up in the initial UI screen)
-	// END		xkan, 8/27/2002
-
 	int flagParent;
 
 	// the next 2 are used to play the proper animation on the body
@@ -991,7 +957,6 @@ typedef struct {
 
 	int portalSequence;
 	// Ridah
-	char        *scriptAI;
 	int reloadPauseTime;                // don't think AI/client's until this time has elapsed
 	int reloadDelayTime;                // don't start loading the savegame until this has expired
 
@@ -1016,13 +981,6 @@ typedef struct {
 
 	qboolean latchGametype;             // DHM - Nerve
 
-	// RF
-	int attackingTeam;                  // which team is attacking
-	int explosiveTargets[2];            // attackers need to explode something to get through
-	qboolean captureFlagMode;
-	qboolean initStaticEnts;
-	qboolean initSeekCoverChains;
-	char        *botScriptBuffer;
 	int globalAccumBuffer[MAX_SCRIPT_ACCUM_BUFFERS];
 
 	int soldierChargeTime[2];
@@ -1097,8 +1055,6 @@ typedef struct {
 	int axisAutoSpawn, alliesAutoSpawn;
 	int axisMG42Counter, alliesMG42Counter;
 
-	int lastClientBotThink;
-
 	limbo_cam_t limboCams[MAX_LIMBO_CAMS];
 	int numLimboCams;
 
@@ -1158,7 +1114,6 @@ qboolean SetTeam( gentity_t *ent, char *s, qboolean force, weapon_t w1, weapon_t
 void G_SetClientWeapons( gentity_t* ent, weapon_t w1, weapon_t w2, qboolean updateclient );
 void Cmd_FollowCycle_f( gentity_t *ent, int dir );
 void Cmd_Kill_f( gentity_t *ent );
-void Cmd_SwapPlacesWithBot_f( gentity_t *ent, int botNum );
 void G_EntitySound( gentity_t *ent, const char *soundId, int volume );
 void G_EntitySoundNoCut( gentity_t *ent, const char *soundId, int volume );
 int ClientNumberFromString( gentity_t *to, char *s );
@@ -1198,16 +1153,16 @@ void Spawn_Shard( gentity_t *ent, gentity_t *inflictor, int quantity, int type )
 // Ridah
 int G_FindConfigstringIndex( const char *name, int start, int max, qboolean create );
 // done.
-int     G_ModelIndex( char *name );
+int     G_ModelIndex( const char *name );
 int     G_SoundIndex( const char *name );
 int     G_SkinIndex( const char *name );
-int     G_ShaderIndex( char *name );
+int     G_ShaderIndex( const char *name );
 int     G_CharacterIndex( const char *name );
 int     G_StringIndex( const char* string );
 qboolean G_AllowTeamsAllowed( gentity_t *ent, gentity_t *activator );
 void    G_UseEntity( gentity_t *ent, gentity_t *other, gentity_t *activator );
 qboolean G_IsWeaponDisabled( gentity_t* ent, weapon_t weapon );
-void    G_TeamCommand( team_t team, char *cmd );
+void    G_TeamCommand( team_t team, const char *cmd );
 void    G_KillBox( gentity_t *ent );
 gentity_t *G_Find( gentity_t *from, int fieldofs, const char *match );
 gentity_t* G_FindByTargetname( gentity_t *from, const char* match );
@@ -1289,7 +1244,6 @@ gentity_t *fire_flamechunk( gentity_t *self, vec3_t start, vec3_t dir );
 
 gentity_t *fire_grenade( gentity_t *self, vec3_t start, vec3_t aimdir, int grenadeWPID );
 gentity_t *fire_rocket( gentity_t *self, vec3_t start, vec3_t dir );
-gentity_t *fire_speargun( gentity_t *self, vec3_t start, vec3_t dir );
 
 #define Fire_Lead( ent, activator, spread, damage, muzzle, forward, right, up ) Fire_Lead_Ext( ent, activator, spread, damage, muzzle, forward, right, up, MOD_MACHINEGUN )
 void Fire_Lead_Ext( gentity_t *ent, gentity_t *activator, float spread, int damage, vec3_t muzzle, vec3_t forward, vec3_t right, vec3_t up, int mod );
@@ -1460,15 +1414,15 @@ void QDECL G_LogPrintf( const char *fmt, ... ) _attribute( ( format( printf,1,2 
 void SendScoreboardMessageToAllClients( void );
 void QDECL G_Printf( const char *fmt, ... ) _attribute( ( format( printf,1,2 ) ) );
 void QDECL G_DPrintf( const char *fmt, ... ) _attribute( ( format( printf,1,2 ) ) );
-void QDECL G_Error( const char *fmt, ... ) _attribute( ( format( printf,1,2 ) ) );
+void NORETURN QDECL G_Error( const char *fmt, ... ) _attribute( ( format( printf,1,2 ) ) );
 // Is this a single player type game - sp or coop?
 qboolean G_IsSinglePlayerGame();
 
 //
 // g_client.c
 //
-char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot );
-void ClientUserinfoChanged( int clientNum );
+const char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot );
+qboolean ClientUserinfoChanged( int clientNum );
 void ClientDisconnect( int clientNum );
 void ClientBegin( int clientNum );
 void ClientCommand( int clientNum );
@@ -1518,84 +1472,16 @@ void G_WriteSessionData( qboolean restart );
 
 void G_CalcRank( gclient_t* client );
 
-//
-// g_bot.c
-//
-void G_InitBots( qboolean restart );
-char *G_GetBotInfoByNumber( int num );
-char *G_GetBotInfoByName( const char *name );
-void G_CheckBotSpawn( void );
-void G_QueueBotBegin( int clientNum );
-qboolean G_BotConnect( int clientNum, qboolean restart );
-void Svcmd_AddBot_f( void );
-void Svcmd_SpawnBot();
-void G_SpawnBot( const char *text );
-int Bot_GetWeaponForClassAndTeam( int classNum, int teamNum, const char *weaponName );
-void G_BotParseCharacterParms( char *characterFile, int *characterInt );
-
-// ai_main.c
-#define MAX_FILEPATH            144
-int BotAIThinkFrame( int time );
-void G_SetAASBlockingEntity( gentity_t *ent, int blocking );
-qboolean BotSinglePlayer();
-qboolean BotCoop();
-//gentity_t *BotCheckBotGameEntity( gentity_t *ent );
-gentity_t *BotFindEntity( gentity_t *from, int fieldofs, char *match );
-void GetBotAmmoPct( int clientNum, int *ammoPct, int *ammoclipPct );
-void BotCalculateMg42Spots( void );
-
-// ai_dmq3.c
-//returns the number of the client with the given name
-int ClientFromName( char *name );
-void BotMoveToIntermission( int client );
-qboolean BotVisibleFromPos( vec3_t srcorigin, int srcnum, vec3_t destorigin, int destent, qboolean dummy );
-qboolean BotCheckAttackAtPos(   int entnum, int enemy, vec3_t pos, qboolean ducking, qboolean allowHitWorld );
-
-// ai_main.c
-// TTimo - wraps to BotGetTargetExplosives, without dependency to bot_target_s (which breaks gcc build)
-int GetTargetExplosives( team_t team, qboolean ignoreDynamite );
-
-//bot settings
-typedef struct bot_settings_s
-{
-	char characterfile[MAX_FILEPATH];
-	float skill;
-	char team[MAX_FILEPATH];
-	int squadNum;       // xkan, 10/10/2002
-} bot_settings_t;
-
-int BotAISetup( int restart );
-//void BotInitBotGameEntities(void);
-int BotAIShutdown( int restart );
-int BotAILoadMap( int restart );
-int BotAISetupClient( int client, struct bot_settings_s *settings );
-int BotAIShutdownClient( int client );
-int BotAIStartFrame( int time );
-void BotTestAAS( vec3_t origin );
-void BotSetIdealViewAngles( int clientNum, vec3_t angle );
-
-
 // g_cmd.c
 void Cmd_Activate_f( gentity_t *ent );
 void Cmd_Activate2_f( gentity_t *ent );
 qboolean Do_Activate_f( gentity_t *ent, gentity_t *traceEnt );
 void G_LeaveTank( gentity_t* ent, qboolean position );
 
-
-// Ridah
-
-// g_save.c
-#ifdef SAVEGAME_SUPPORT
-qboolean G_SaveGame( char *username );
-void G_LoadGame( void );
-qboolean G_SavePersistant( char *nextmap );
-void G_LoadPersistant( void );
-#endif // SAVEGAME_SUPPORT
-
 // g_script.c
 void G_Script_ScriptParse( gentity_t *ent );
 qboolean G_Script_ScriptRun( gentity_t *ent );
-void G_Script_ScriptEvent( gentity_t *ent, char *eventStr, char *params );
+void G_Script_ScriptEvent( gentity_t *ent, const char *eventStr, const char *params );
 void G_Script_ScriptLoad( void );
 void G_Script_EventStringInit( void );
 
@@ -1608,14 +1494,6 @@ float AngleDifference( float ang1, float ang2 );
 // g_props.c
 void Props_Chair_Skyboxtouch( gentity_t *ent );
 
-// ai_script.c
-void Bot_ScriptLoad( void );
-qboolean Bot_ScriptInitBot( int entnum );
-void Bot_ScriptEvent( int entityNum, char *eventStr, char *params );
-
-void Bot_TeamScriptEvent( int team, char *eventStr, char *params );
-
-
 #include "g_team.h" // teamplay specific stuff
 
 extern level_locals_t level;
@@ -1623,11 +1501,11 @@ extern gentity_t g_entities[];          //DAJ was explicit set to MAX_ENTITIES
 extern g_campaignInfo_t g_campaigns[];
 extern int saveGamePending;
 
-#define FOFS( x ) ( (int)&( ( (gentity_t *)0 )->x ) )
+#define FOFS( x ) ( offsetof(gentity_t, x) )
 
 extern vmCvar_t g_gametype;
 
-extern vmCvar_t g_log;
+extern vmCvar_t g_logFile;
 extern vmCvar_t g_dedicated;
 extern vmCvar_t g_cheats;
 extern vmCvar_t g_maxclients;               // allow this many total, including spectators
@@ -1639,7 +1517,7 @@ extern vmCvar_t g_fraglimit;
 extern vmCvar_t g_timelimit;
 extern vmCvar_t g_friendlyFire;
 extern vmCvar_t g_password;
-extern vmCvar_t sv_privatepassword;
+extern vmCvar_t g_privatepassword;
 extern vmCvar_t g_gravity;
 extern vmCvar_t g_speed;
 extern vmCvar_t g_knockback;
@@ -1690,7 +1568,6 @@ extern vmCvar_t g_scriptDebug;
 extern vmCvar_t g_userAim;
 extern vmCvar_t g_developer;
 
-extern vmCvar_t g_footstepAudibleRange;
 // JPW NERVE multiplayer
 extern vmCvar_t g_redlimbotime;
 extern vmCvar_t g_bluelimbotime;
@@ -1804,20 +1681,10 @@ extern vmCvar_t g_nextcampaign;
 
 extern vmCvar_t g_disableComplaints;
 
-extern vmCvar_t bot_debug;                  // if set, draw "thought bubbles" for crosshair-selected bot
-extern vmCvar_t bot_debug_curAINode;        // the text of the current ainode for the bot begin debugged
-extern vmCvar_t bot_debug_alertState;       // alert state of the bot being debugged
-extern vmCvar_t bot_debug_pos;              // coords of the bot being debugged
-extern vmCvar_t bot_debug_weaponAutonomy;   // weapon autonomy of the bot being debugged
-extern vmCvar_t bot_debug_movementAutonomy; // movement autonomy of the bot being debugged
-extern vmCvar_t bot_debug_cover_spot;       // What cover spot are we going to?
-extern vmCvar_t bot_debug_anim;             // what animation is the bot playing?
-
-
-
+#include "be_aas.h"
 
 void    trap_Printf( const char *fmt );
-void    trap_Error( const char *fmt );
+void    NORETURN trap_Error( const char *fmt );
 int     trap_Milliseconds( void );
 int     trap_Argc( void );
 void    trap_Argv( int n, char *buffer, int bufferLength );
@@ -2071,7 +1938,7 @@ void Svcmd_StartMatch_f( void );
 void Svcmd_ResetMatch_f( qboolean fDoReset, qboolean fDoRestart );
 void Svcmd_SwapTeams_f( void );
 
-void trap_PbStat( int clientNum, char *category, char *values ) ;
+void trap_PbStat( int clientNum, const char *category, const char *values ) ;
 
 // g_antilag.c
 void G_StoreClientPosition( gentity_t* ent );
@@ -2183,8 +2050,8 @@ typedef enum {
 	SM_NUM_SYS_MSGS,
 } sysMsg_t;
 
-void G_CheckForNeededClasses( void );
-void G_CheckMenDown( void );
+//void G_CheckForNeededClasses( void );
+//void G_CheckMenDown( void );
 void G_SendMapEntityInfo( gentity_t* e );
 void G_SendSystemMessage( sysMsg_t message, int team );
 int G_GetSysMessageNumber( const char* sysMsg );
@@ -2200,53 +2067,6 @@ void G_RemoveClientFromFireteams( int entityNum, qboolean update, qboolean print
 void G_PrintClientSpammyCenterPrint( int entityNum, char* text );
 
 void aagun_fire( gentity_t *other );
-
-// TAT 11/13/2002
-//		Server only entities
-
-struct g_serverEntity_s
-{
-	qboolean inuse;
-
-	char        *classname;         // set in QuakeEd
-	int spawnflags;                 // set in QuakeEd
-
-	// our parent entity
-	g_serverEntity_t    *parent;
-
-	// pointer to the next server entity
-	g_serverEntity_t    *nextServerEntity;
-	g_serverEntity_t    *target_ent;
-	g_serverEntity_t    *chain;
-
-	char        *name;
-	char        *target;
-
-	vec3_t origin;                  // Let's try keeping this simple, and just having an origin
-	vec3_t angles;                  // facing angle (for a seek cover spot)
-	int number;                     // identifier for this entity
-	int team;                       // which team?  seek cover spots need this
-	int areaNum;                    // This thing doesn't move, so we should only need to calc the areanum once
-	int botIgnoreTime;              // So that multiple bots don't use the same seek cover spot
-
-	void ( *setup )( g_serverEntity_t *self );          // Setup function called once after all server objects are created
-};
-
-// clear out all the sp entities
-void InitServerEntities( void );
-// get the server entity with the passed in number
-g_serverEntity_t *GetServerEntity( int num );
-// Give a gentity_t, create a sp entity, copy all pertinent data, and return it
-g_serverEntity_t *CreateServerEntity( gentity_t *ent );
-// These server entities don't get to update every frame, but some of them have to set themselves up
-//		after they've all been created
-//		So we want to give each entity the chance to set itself up after it has been created
-void InitialServerEntitySetup();
-// Like G_Find, but for server entities
-g_serverEntity_t *FindServerEntity( g_serverEntity_t *from, int fieldofs, char *match );
-
-
-#define SE_FOFS( x ) ( (int)&( ( (g_serverEntity_t *)0 )->x ) )
 
 
 // Match settings
@@ -2347,7 +2167,7 @@ void G_addStats( gentity_t *targ, gentity_t *attacker, int dmg_ref, int mod );
 void G_addStatsHeadShot( gentity_t *attacker, int mod );
 qboolean G_allowPanzer( gentity_t *ent );
 int G_checkServerToggle( vmCvar_t *cv );
-char *G_createStats( gentity_t *refEnt );
+const char *G_createStats( gentity_t *refEnt );
 void G_deleteStats( int nClient );
 qboolean G_desiredFollow( gentity_t *ent, int nTeam );
 void G_globalSound( char *sound );
@@ -2356,7 +2176,7 @@ void G_loadMatchGame( void );
 void G_matchInfoDump( unsigned int dwDumpType );
 void G_printMatchInfo( gentity_t *ent );
 void G_parseStats( char *pszStatsInfo );
-void G_printFull( char *str, gentity_t *ent );
+void G_printFull( const char *str, gentity_t *ent );
 void G_resetModeState( void );
 void G_resetRoundState( void );
 void G_spawnPrintf( int print_type, int print_time, gentity_t *owner );
@@ -2525,3 +2345,8 @@ void G_TempTraceIgnorePlayersAndBodies( void );
 qboolean G_CanPickupWeapon( weapon_t weapon, gentity_t* ent );
 
 qboolean G_LandmineSnapshotCallback( int entityNum, int clientNum );
+
+// extension interface
+
+qboolean trap_GetValue( char *value, int valueSize, const char *key );
+extern int dll_com_trapGetValue;

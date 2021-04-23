@@ -580,7 +580,7 @@ void Weapon_Syringe( gentity_t *ent ) {
 					ent->client->sess.aWeaponStats[WS_SYRINGE].hits++;
 				}
 				if ( ent && ent->client ) {
-					G_LogPrintf( "Medic_Revive: %d %d\n", ent - g_entities, traceEnt - g_entities );                // OSP
+					G_LogPrintf( "Medic_Revive: %d %d\n", (int)(ent - g_entities), (int)(traceEnt - g_entities) );                // OSP
 
 				}
 				if ( !traceEnt->isProp ) { // Gordon: flag for if they were teamkilled or not
@@ -973,15 +973,6 @@ static qboolean TryConstructing( gentity_t *ent ) {
 				return( qtrue );    // likely will come back soon - so override other plier bits anyway
 
 			}
-			// Gordon: are we scripted only?
-			if ( !( ent->spawnflags & CONSTRUCTIBLE_AAS_SCRIPTED ) ) {
-				if ( !( ent->spawnflags & CONSTRUCTIBLE_NO_AAS_BLOCKING ) ) {
-					// RF, if we are blocking AAS areas when built, then clear AAS blocking so we can set it again after the stage has been increased
-					if ( constructible->spawnflags & CONSTRUCTIBLE_BLOCK_PATHS_WHEN_BUILD ) {
-						G_SetAASBlockingEntity( ent, AAS_AREA_ENABLED );
-					}
-				}
-			}
 
 			// swap brushmodels if staged
 			if ( constructible->count2 ) {
@@ -1194,7 +1185,7 @@ static qboolean TryConstructing( gentity_t *ent ) {
 				{
 					gentity_t* tent = NULL;
 					while ( ( tent = G_Find( tent, FOFS( target ), constructible->targetname ) ) != NULL ) {
-						if ( ( tent->s.eType == ET_OID_TRIGGER ) ) {
+						if ( tent->s.eType == ET_OID_TRIGGER ) {
 							e->parent = tent;
 						}
 					}
@@ -1248,25 +1239,6 @@ static qboolean TryConstructing( gentity_t *ent ) {
 						trap_LinkEntity( check );
 						break;
 					}
-				}
-			}
-		}
-
-		// Gordon: are we scripted only?
-		if ( !( ent->spawnflags & CONSTRUCTIBLE_AAS_SCRIPTED ) ) {
-			if ( !( ent->spawnflags & CONSTRUCTIBLE_NO_AAS_BLOCKING ) ) {
-				// RF, a stage has been completed, either enable or disable AAS areas appropriately
-				if ( !( constructible->spawnflags & CONSTRUCTIBLE_BLOCK_PATHS_WHEN_BUILD ) ) {
-					// builing creates AAS paths
-					// Gordon: HACK from ryan
-					//				if( !constructible->count2 || ( constructible->grenadeFired == constructible->count2 ) )
-					{
-						// completely built, enable paths
-						G_SetAASBlockingEntity( constructible, AAS_AREA_ENABLED );
-					}
-				} else {
-					// builing blocks AAS paths
-					G_SetAASBlockingEntity( constructible, AAS_AREA_DISABLED );
 				}
 			}
 		}
@@ -1377,7 +1349,7 @@ void AutoBuildConstruction( gentity_t* constructible ) {
 			e->s.eType = ET_EXPLOSIVE_INDICATOR;
 
 			while ( ( tent = G_Find( tent, FOFS( target ), constructible->targetname ) ) != NULL ) {
-				if ( ( tent->s.eType == ET_OID_TRIGGER ) ) {
+				if ( tent->s.eType == ET_OID_TRIGGER ) {
 					if ( tent->spawnflags & 8 ) {
 						e->s.eType = ET_TANK_INDICATOR;
 					}
@@ -1388,7 +1360,7 @@ void AutoBuildConstruction( gentity_t* constructible ) {
 			{
 				gentity_t* tent = NULL;
 				while ( ( tent = G_Find( tent, FOFS( target ), constructible->targetname ) ) != NULL ) {
-					if ( ( tent->s.eType == ET_OID_TRIGGER ) ) {
+					if ( tent->s.eType == ET_OID_TRIGGER ) {
 						e->parent = tent;
 					}
 				}
@@ -1442,23 +1414,6 @@ void AutoBuildConstruction( gentity_t* constructible ) {
 					trap_LinkEntity( check );
 					break;
 				}
-			}
-		}
-	}
-
-	// Gordon: are we scripted only?
-	if ( !( constructible->spawnflags & CONSTRUCTIBLE_AAS_SCRIPTED ) ) {
-		if ( !( constructible->spawnflags & CONSTRUCTIBLE_NO_AAS_BLOCKING ) ) {
-			// RF, a stage has been completed, either enable or disable AAS areas appropriately
-			if ( !( constructible->spawnflags & CONSTRUCTIBLE_BLOCK_PATHS_WHEN_BUILD ) ) {
-				// builing creates AAS paths
-				if ( !constructible->count2 || ( constructible->grenadeFired == constructible->count2 ) ) {
-					// completely built, enable paths
-					G_SetAASBlockingEntity( constructible, AAS_AREA_ENABLED );
-				}
-			} else {
-				// builing blocks AAS paths
-				G_SetAASBlockingEntity( constructible, AAS_AREA_DISABLED );
 			}
 		}
 	}
@@ -1571,7 +1526,7 @@ void Weapon_Engineer( gentity_t *ent ) {
 				traceEnt->health = MG42_MULTIPLAYER_HEALTH;
 			}
 
-			G_LogPrintf( "Repair: %d\n", ent - g_entities );    // OSP
+			G_LogPrintf( "Repair: %d\n", (int)(ent - g_entities) );    // OSP
 
 			if ( traceEnt->sound3to2 != ent->client->sess.sessionTeam ) {
 				AddScore( ent, WOLF_REPAIR_BONUS ); // JPW NERVE props to the E for the fixin'
@@ -1885,7 +1840,7 @@ evilbanigoto:
 						continue;
 					}
 
-					if ( ( hit->s.eType == ET_OID_TRIGGER ) ) {
+					if ( hit->s.eType == ET_OID_TRIGGER ) {
 						if ( !( hit->spawnflags & ( AXIS_OBJECTIVE | ALLIED_OBJECTIVE ) ) ) {
 							continue;
 						}
@@ -1956,7 +1911,7 @@ evilbanigoto:
 					if ( !( hit->r.contents & CONTENTS_TRIGGER ) ) {
 						continue;
 					}
-					if ( ( hit->s.eType == ET_OID_TRIGGER ) ) {
+					if ( hit->s.eType == ET_OID_TRIGGER ) {
 
 						if ( !( hit->spawnflags & ( AXIS_OBJECTIVE | ALLIED_OBJECTIVE ) ) ) {
 							continue;
@@ -1977,7 +1932,7 @@ evilbanigoto:
 							}
 						}
 
-						// rain - spawnflags 128 = disabled (#309)
+						// rain - spawnflags 128 = disabled
 						if ( !( hit->spawnflags & 128 ) && ( ( ( hit->spawnflags & AXIS_OBJECTIVE ) && ( ent->client->sess.sessionTeam == TEAM_ALLIES ) ) ||
 															 ( ( hit->spawnflags & ALLIED_OBJECTIVE ) && ( ent->client->sess.sessionTeam == TEAM_AXIS ) ) ) ) {
 
@@ -1991,12 +1946,13 @@ evilbanigoto:
 							if ( !( hit->spawnflags & OBJECTIVE_DESTROYED ) ) {
 								AddScore( traceEnt->parent, WOLF_DYNAMITE_PLANT ); // give drop score to guy who dropped it
 								if ( traceEnt->parent && traceEnt->parent->client ) {
-									G_LogPrintf( "Dynamite_Plant: %d\n", traceEnt->parent - g_entities );   // OSP
+									G_LogPrintf( "Dynamite_Plant: %d\n", (int)(traceEnt->parent - g_entities) );   // OSP
 								}
 								traceEnt->parent = ent; // give explode score to guy who armed it
 							}
 							//bani - fix #238
 							traceEnt->etpro_misc_1 |= 1;
+							traceEnt->etpro_misc_2  = hit->s.number;
 						}
 //bani
 //						i = num;
@@ -2061,7 +2017,7 @@ evilbanigoto:
 								 hit->s.teamNum && ( hit->s.teamNum == ent->client->sess.sessionTeam ) ) { // ==, as it's inverse
 								AddScore( traceEnt->parent, WOLF_DYNAMITE_PLANT ); // give drop score to guy who dropped it
 								if ( traceEnt->parent && traceEnt->parent->client ) {
-									G_LogPrintf( "Dynamite_Plant: %d\n", traceEnt->parent - g_entities );   // OSP
+									G_LogPrintf( "Dynamite_Plant: %d\n", (int)(traceEnt->parent - g_entities) );   // OSP
 								}
 								traceEnt->parent = ent; // give explode score to guy who armed it
 							}
@@ -2121,7 +2077,7 @@ evilbanigoto:
 						if ( !( hit->r.contents & CONTENTS_TRIGGER ) ) {
 							continue;
 						}
-						if ( ( hit->s.eType == ET_OID_TRIGGER ) ) {
+						if ( hit->s.eType == ET_OID_TRIGGER ) {
 
 							if ( !( hit->spawnflags & ( AXIS_OBJECTIVE | ALLIED_OBJECTIVE ) ) ) {
 								continue;
@@ -2227,7 +2183,7 @@ evilbanigoto:
 								if ( hit->s.teamNum == TEAM_AXIS && ( !scored ) ) {
 									AddScore( ent,WOLF_DYNAMITE_DIFFUSE );
 									if ( ent && ent->client ) {
-										G_LogPrintf( "Dynamite_Diffuse: %d\n", ent - g_entities );                  // OSP
+										G_LogPrintf( "Dynamite_Diffuse: %d\n", (int)(ent - g_entities) );                  // OSP
 									}
 									G_AddSkillPoints( ent, SK_EXPLOSIVES_AND_CONSTRUCTION, 6.f );
 									G_DebugAddSkillPoints( ent, SK_EXPLOSIVES_AND_CONSTRUCTION, 6.f, "defusing enemy dynamite" );
@@ -2247,7 +2203,7 @@ evilbanigoto:
 								if ( hit->s.teamNum == TEAM_ALLIES && ( !scored ) ) {
 									AddScore( ent,WOLF_DYNAMITE_DIFFUSE );
 									if ( ent && ent->client ) {
-										G_LogPrintf( "Dynamite_Diffuse: %d\n", ent - g_entities );                  // OSP
+										G_LogPrintf( "Dynamite_Diffuse: %d\n", (int)(ent - g_entities) );                  // OSP
 									}
 									G_AddSkillPoints( ent, SK_EXPLOSIVES_AND_CONSTRUCTION, 6.f );
 									G_DebugAddSkillPoints( ent, SK_EXPLOSIVES_AND_CONSTRUCTION, 6.f, "defusing enemy dynamite" );
@@ -2304,7 +2260,7 @@ qboolean G_AvailableAirstrikes( gentity_t* ent ) {
 }
 
 void G_AddAirstrikeToCounters( gentity_t* ent ) {
-	int max = min( 6, 2 * ( ceil( g_heavyWeaponRestriction.integer * G_TeamCount( ent, -1 ) * 0.1f * 10 * 0.01f ) ) );
+	int max = MIN( 6, 2 * ( ceil( g_heavyWeaponRestriction.integer * G_TeamCount( ent, -1 ) * 0.1f * 10 * 0.01f ) ) );
 
 
 
@@ -3526,7 +3482,7 @@ gentity_t *weapon_grenadelauncher_fire( gentity_t *ent, int grenType ) {
 		pitch = 1.3f;
 	} else {
 		pitch = -pitch;
-		pitch = min( pitch, 30 );
+		pitch = MIN( pitch, 30 );
 		pitch /= 30.f;
 		pitch = 1 - pitch;
 		forward[2] += ( pitch * 0.5f );
@@ -3539,8 +3495,8 @@ gentity_t *weapon_grenadelauncher_fire( gentity_t *ent, int grenType ) {
 	VectorNormalizeFast( forward );         //	make sure forward is normalized
 
 	upangle = -( ent->s.apos.trBase[0] ); //	this will give between	-90 / 90
-	upangle = min( upangle, 50 );
-	upangle = max( upangle, -50 );        //	now clamped to	-50 / 50	(don't allow firing straight up/down)
+	upangle = MIN( upangle, 50 );
+	upangle = MAX( upangle, -50 );        //	now clamped to	-50 / 50	(don't allow firing straight up/down)
 	upangle = upangle / 100.0f;           //				   -0.5 / 0.5
 	upangle += 0.5f;                    //				    0.0 / 1.0
 
@@ -3660,20 +3616,6 @@ void Weapon_Panzerfaust_Fire( gentity_t *ent ) {
 
 //	VectorAdd( m->s.pos.trDelta, ent->client->ps.velocity, m->s.pos.trDelta );	// "real" physics
 }
-
-
-/*
-======================================================================
-
-SPEARGUN
-
-======================================================================
-*/
-/*void Weapon_Speargun_Fire (gentity_t *ent) {
-	gentity_t	*m;
-
-	m = fire_speargun (ent, muzzleEffect, forward);
-}*/
 
 
 /*

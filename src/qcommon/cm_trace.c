@@ -115,7 +115,7 @@ static float CM_DistanceFromLineSquared( const vec3_t p, const vec3_t lp1, const
 	int j;
 
 	CM_ProjectPointOntoVector(p, lp1, dir, proj);
-	for (j = 0; j < 3; j++) 
+	for (j = 0; j < 3; j++)
 		if ((proj[j] > lp1[j] && proj[j] > lp2[j]) ||
 			(proj[j] < lp1[j] && proj[j] < lp2[j]))
 			break;
@@ -196,7 +196,7 @@ static void CM_TestBoxInBrush( traceWork_t *tw, const cbrush_t *brush ) {
 			side = brush->sides + i;
 			plane = side->plane;
 
-			// adjust the plane distance apropriately for radius
+			// adjust the plane distance appropriately for radius
 			dist = plane->dist + tw->sphere.radius;
 			// find the closest point on the capsule to the plane
 			t = DotProductDP( plane->normal, tw->sphere.offset );
@@ -221,7 +221,7 @@ static void CM_TestBoxInBrush( traceWork_t *tw, const cbrush_t *brush ) {
 			side = brush->sides + i;
 			plane = side->plane;
 
-			// adjust the plane distance apropriately for mins/maxs
+			// adjust the plane distance appropriately for mins/maxs
 			dist = plane->dist - DotProduct( tw->offsets[ plane->signbits ], plane->normal );
 
 			d1 = DotProductDP( tw->start, plane->normal ) - dist;
@@ -623,7 +623,7 @@ static void CM_TraceThroughBrush( traceWork_t *tw, const cbrush_t *brush ) {
 			side = brush->sides + i;
 			plane = side->plane;
 
-			// adjust the plane distance apropriately for radius
+			// adjust the plane distance appropriately for radius
 			dist = plane->dist + tw->sphere.radius;
 
 			// find the closest point on the capsule to the plane
@@ -654,7 +654,7 @@ static void CM_TraceThroughBrush( traceWork_t *tw, const cbrush_t *brush ) {
 				return;
 			}
 
-			// if it doesn't cross the plane, the plane isn't relevent
+			// if it doesn't cross the plane, the plane isn't relevant
 			if (d1 <= 0 && d2 <= 0 ) {
 				continue;
 			}
@@ -690,7 +690,7 @@ static void CM_TraceThroughBrush( traceWork_t *tw, const cbrush_t *brush ) {
 			side = brush->sides + i;
 			plane = side->plane;
 
-			// adjust the plane distance apropriately for mins/maxs
+			// adjust the plane distance appropriately for mins/maxs
 			dist = plane->dist - DotProductDP( tw->offsets[ plane->signbits ], plane->normal );
 
 			d1 = DotProductDP( tw->start, plane->normal ) - dist;
@@ -708,7 +708,7 @@ static void CM_TraceThroughBrush( traceWork_t *tw, const cbrush_t *brush ) {
 				return;
 			}
 
-			// if it doesn't cross the plane, the plane isn't relevent
+			// if it doesn't cross the plane, the plane isn't relevant
 			if (d1 <= 0 && d2 <= 0 ) {
 				continue;
 			}
@@ -749,7 +749,7 @@ static void CM_TraceThroughBrush( traceWork_t *tw, const cbrush_t *brush ) {
 		}
 		return;
 	}
-	
+
 	if (enterFrac < leaveFrac) {
 		if (enterFrac > -1 && enterFrac < tw->trace.fraction) {
 			if (enterFrac < 0) {
@@ -1207,7 +1207,7 @@ static void CM_TraceThroughTree( traceWork_t *tw, int num, float p1f, float p2f,
 	node = cm.nodes + num;
 	plane = node->plane;
 
-	// adjust the plane distance apropriately for mins/maxs
+	// adjust the plane distance appropriately for mins/maxs
 	if ( plane->type < 3 ) {
 		t1 = p1[plane->type] - plane->dist;
 		t2 = p2[plane->type] - plane->dist;
@@ -1271,7 +1271,7 @@ static void CM_TraceThroughTree( traceWork_t *tw, int num, float p1f, float p2f,
 	} else if ( frac > 1 ) {
 		frac = 1;
 	}
-		
+
 	midf = p1f + (p2f - p1f)*frac;
 
 	mid[0] = p1[0] + frac*(p2[0] - p1[0]);
@@ -1286,7 +1286,7 @@ static void CM_TraceThroughTree( traceWork_t *tw, int num, float p1f, float p2f,
 	} else if ( frac2 > 1 ) {
 		frac2 = 1;
 	}
-		
+
 	midf = p1f + (p2f - p1f)*frac2;
 
 	mid[0] = p1[0] + frac2*(p2[0] - p1[0]);
@@ -1368,12 +1368,11 @@ static void CM_Trace( trace_t *results, const vec3_t start, const vec3_t end, co
 		VectorSet( tw.sphere.offset, 0, 0, tw.size[1][2] - tw.sphere.radius );
 	}
 
-
 	positionTest = ( start[0] == end[0] && start[1] == end[1] && start[2] == end[2] );
 
 	tw.maxOffset = tw.size[1][0] + tw.size[1][1] + tw.size[1][2];
 
-	// tw.offsets[signbits] = vector to apropriate corner from origin
+	// tw.offsets[signbits] = vector to appropriate corner from origin
 	tw.offsets[0][0] = tw.size[0][0];
 	tw.offsets[0][1] = tw.size[0][1];
 	tw.offsets[0][2] = tw.size[0][2];
@@ -1616,7 +1615,7 @@ void CM_TransformedBoxTrace( trace_t *results, const vec3_t start, const vec3_t 
 	VectorSubtract( end_l, origin, end_l );
 
 	// rotate start and end into the models frame of reference
-	if ( model != BOX_MODEL_HANDLE && 
+	if ( model != BOX_MODEL_HANDLE &&
 		(angles[0] || angles[1] || angles[2]) ) {
 		rotated = qtrue;
 	} else {

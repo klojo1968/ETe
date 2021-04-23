@@ -698,7 +698,7 @@ CG_OwnerDraw
 ==============
 */
 void CG_OwnerDraw( float x, float y, float w, float h, float text_x, float text_y, int ownerDraw, int ownerDrawFlags, int align, float special, float scale, vec4_t color, qhandle_t shader, int textStyle ) {
-	rectDef_t rect;
+	/*rectDef_t rect;
 
 	if ( cg_drawStatus.integer == 0 ) {
 		return;
@@ -712,7 +712,7 @@ void CG_OwnerDraw( float x, float y, float w, float h, float text_x, float text_
 	switch ( ownerDraw ) {
 	default:
 		break;
-	}
+	}*/
 }
 
 void CG_MouseEvent( int x, int y ) {
@@ -937,5 +937,5 @@ void CG_GetTeamColor( vec4_t *color ) {
 	}
 }
 
-void CG_RunMenuScript( char **args ) {
+void CG_RunMenuScript( const char **args ) {
 }

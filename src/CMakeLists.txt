@@ -24,26 +24,96 @@ endif()
 Include(CheckTypeSize)
 check_type_size("void*" CMAKE_SIZEOF_VOID_P)
 
-if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-    message("64-bit compatibility not yet working! Enforce 32-bit with a toolchain")
-endif(CMAKE_SIZEOF_VOID_P EQUAL 8)
+#make all this cleaner and match rest of cmake I guess?
+#if(WIN32)
+#	set(LIB_SUFFIX "_mp_")
+#	set(X86 ON)
+#	if(CMAKE_SIZEOF_VOID_P MATCHES "8")
+#		set(Architecture "x86_64")
+#		set(WIN64 TRUE)
+#	else()
+#		set(Architecture "x86")
+#		set(WIN64 FALSE)
+#	endif()
+#else()
+	if(APPLE)
+		set(LIB_SUFFIX "_mac")
+	else()
+		set(LIB_SUFFIX ".mp.")
+	endif()
+
+    if(APPLE)
+        set(DLL_EXT ".dylib")
+    elseif(NOT WIN32)
+        set(DLL_EXT ".so")
+    else()
+        set(DLL_EXT ".dll")
+    endif()
+
+    set(X86 OFF)
+    set(X86_64 OFF)
+    set(ARM32 OFF)
+    set(ARM64 OFF)
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "^arm")
+        set(ARM32 ON)
+        set(Architecture "arm")
+    elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^aarch64")
+        set(ARM64 ON)
+        set(Architecture "aarch64")
+	elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^i.86$")
+		set(X86 ON)
+#		if(APPLE)
+#			set(Architecture "x86")
+#		else()
+			# e.g. Linux
+			set(Architecture "i386")
+#		endif()
+	elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^x86.64$")
+        #set(X86 ON)
+        set(X86_64 ON)
+		set(Architecture "x86_64")
+	elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "powerpc")
+		set(Architecture "ppc")
+	elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "powerpc64")
+		set(Architecture "ppc64")
+	else()
+		set(Architecture "${CMAKE_SYSTEM_PROCESSOR}")
+	endif()
+#endif()
+
+if(CMAKE_SYSTEM_NAME MATCHES "Linux")
+    link_libraries("-Wl,--hash-style=both")
+endif()
+
+message("Configured for ${CMAKE_SYSTEM_PROCESSOR}")
 
 option(BUILD_CLIENT "Build the ete client binary" ON)
 option(BUILD_DEDSERVER "Build the ete dedicated server binary" ON)
-option(USE_SDL2 "Whether to use native backends or SDL2" OFF)
+option(USE_SDL2 "Whether to use native backends or SDL2" ON)
 option(USE_SYSTEM_JPEG "Look for and use system jpeg library instead of locally built" ON)
 option(DYNAMIC_RENDERER "Whether to use modular rendering features (builds as shared object instead of library" OFF)
 #option(USE_DISCORD "Use discord rich presence API" OFF)
+option(BUILD_ETMAIN_MOD "Build cgame/qagame/ui modules for etmain" OFF)
 
 set(USE_DISCORD OFF)
 
-set(compiler_flags_global -pipe -Wall -fmessage-length=0 -fno-strict-aliasing)
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+set(compiler_flags_global -pipe -Wall -fmessage-length=0 -fno-strict-aliasing -fvisibility=hidden)
+else()
+set(compiler_flags_global -pipe -Wall -fmessage-length=0 -fno-strict-aliasing -fvisibility=hidden)
+endif()
 # debug: explicit -Og -D_DEBUG, implicit -g
 set(compiler_flags_debug ${compiler_flags_global} -Og -D_DEBUG)
 # relwithdebinfo: implicit -O2 -g -DNDEBUG
 set(compiler_flags_relwithdebinfo ${compiler_flags_global})
 # release: implicit -O3 -DNDEBUG
-set(compiler_flags_release ${compiler_flags_global}  -march=i686 -Winline -ffast-math -fomit-frame-pointer -finline-functions -fschedule-insns2)
+if(APPLE AND X86_64)
+set(compiler_flags_release ${compiler_flags_global})
+elseif(X86_64)
+set(compiler_flags_release ${compiler_flags_global})
+else()
+set(compiler_flags_release ${compiler_flags_global} -march=i686 -Winline -ffast-math -fomit-frame-pointer -finline-functions -fschedule-insns2)
+endif()
 
 set(SRCDIR "${CMAKE_SOURCE_DIR}")
 
@@ -102,7 +172,6 @@ set(client_files
     "client/snd_mem.c"
     "client/snd_mix.c"
     "client/snd_wavelet.c"
-    #"qcommon/dl_main_curl.c"
 )
 
 set(server_files
@@ -184,7 +253,6 @@ if(USE_SDL2)
     )
 endif(USE_SDL2)
 
-#todo allow system jpeg(turbo)
 if(NOT USE_SYSTEM_JPEG)
     set(jpeg_local_files
         "jpeg-8c/jaricom.c"
@@ -282,6 +350,143 @@ if(DYNAMIC_RENDERER)
         "qcommon/q_math.c"
     )
 endif(DYNAMIC_RENDERER)
+
+if(BUILD_ETMAIN_MOD)
+    set(cgame_files
+        "cgame/cg_atmospheric.c"
+        "cgame/cg_character.c"
+        "cgame/cg_commandmap.c"
+        "cgame/cg_consolecmds.c"
+        "cgame/cg_debriefing.c"
+        "cgame/cg_draw.c"
+        "cgame/cg_drawtools.c"
+        "cgame/cg_effects.c"
+        "cgame/cg_ents.c"
+        "cgame/cg_event.c"
+        "cgame/cg_fireteamoverlay.c"
+        "cgame/cg_fireteams.c"
+        "cgame/cg_flamethrower.c"
+        "cgame/cg_info.c"
+        "cgame/cg_limbopanel.c"
+        "cgame/cg_loadpanel.c"
+        "cgame/cg_localents.c"
+        "cgame/cg_main.c"
+        "cgame/cg_marks.c"
+        "cgame/cg_missionbriefing.c"
+        "cgame/cg_multiview.c"
+        "cgame/cg_newDraw.c"
+        "cgame/cg_particles.c"
+        "cgame/cg_players.c"
+        "cgame/cg_playerstate.c"
+        "cgame/cg_polybus.c"
+        "cgame/cg_popupmessages.c"
+        "cgame/cg_predict.c"
+        "cgame/cg_scoreboard.c"
+        "cgame/cg_servercmds.c"
+        "cgame/cg_snapshot.c"
+        "cgame/cg_sound.c"
+        "cgame/cg_spawn.c"
+        "cgame/cg_statsranksmedals.c"
+        "cgame/cg_syscalls.c"
+        "cgame/cg_trails.c"
+        "cgame/cg_view.c"
+        "cgame/cg_weapons.c"
+        "cgame/cg_window.c"
+        "game/bg_animation.c"
+        "game/bg_animgroup.c"
+        "game/bg_character.c"
+        "game/bg_classes.c"
+        "game/bg_misc.c"
+        "game/bg_pmove.c"
+        "game/bg_slidemove.c"
+        "game/bg_sscript.c"
+        "game/bg_stats.c"
+        "game/bg_tracemap.c"
+        "qcommon/q_math.c"
+        "qcommon/q_shared.c"
+        "ui/ui_shared.c"
+    )
+
+    set(qagame_files
+        #"botai/ai_cmd.c"
+        #"botai/ai_dmgoal_mp.c"
+        #"botai/ai_dmnet_mp.c"
+        #"botai/ai_dmq3.c"
+        #"botai/ai_main.c"
+        #"botai/ai_script.c"
+        #"botai/ai_script_actions.c"
+        #"botai/ai_team.c"
+        "game/bg_animation.c"
+        "game/bg_animgroup.c"
+        "game/bg_campaign.c"
+        "game/bg_character.c"
+        "game/bg_classes.c"
+        "game/bg_misc.c"
+        "game/bg_pmove.c"
+        "game/bg_slidemove.c"
+        "game/bg_sscript.c"
+        "game/bg_stats.c"
+        "game/bg_tracemap.c"
+        "game/g_active.c"
+        "game/g_alarm.c"
+        "game/g_antilag.c"
+        #"game/g_bot.c"
+        "game/g_buddy_list.c"
+        "game/g_character.c"
+        "game/g_client.c"
+        "game/g_cmds.c"
+        "game/g_cmds_ext.c"
+        "game/g_combat.c"
+        "game/g_config.c"
+        "game/g_fireteams.c"
+        "game/g_items.c"
+        "game/g_main.c"
+        "game/g_match.c"
+        "game/g_mem.c"
+        "game/g_misc.c"
+        "game/g_missile.c"
+        "game/g_mover.c"
+        "game/g_multiview.c"
+        "game/g_props.c"
+        "game/g_referee.c"
+        #"game/g_save.c"
+        "game/g_script.c"
+        "game/g_script_actions.c"
+        "game/g_session.c"
+        "game/g_spawn.c"
+        "game/g_stats.c"
+        #"game/g_sv_entities.c"
+        "game/g_svcmds.c"
+        "game/g_syscalls.c"
+        "game/g_systemmsg.c"
+        "game/g_target.c"
+        "game/g_team.c"
+        "game/g_teammapdata.c"
+        "game/g_trigger.c"
+        "game/g_utils.c"
+        "game/g_vote.c"
+        "game/g_weapon.c"
+        "qcommon/q_math.c"
+        "qcommon/q_shared.c"
+    )
+
+    set(ui_files
+        "ui/ui_atoms.c"
+        "ui/ui_gameinfo.c"
+        "ui/ui_loadpanel.c"
+        "ui/ui_main.c"
+        "ui/ui_players.c"
+        "ui/ui_shared.c"
+        "ui/ui_syscalls.c"
+        #"ui/ui_util.c"
+        "game/bg_campaign.c"
+        "game/bg_classes.c"
+        "game/bg_misc.c"
+        "qcommon/q_math.c"
+        "qcommon/q_shared.c"
+    )
+endif(BUILD_ETMAIN_MOD)
+
 add_library(botlib STATIC "${botlib_files}")
 target_compile_options(botlib
     PRIVATE $<$<AND:$<COMPILE_LANGUAGE:C>,$<CONFIG:DEBUG>>:${compiler_flags_debug} -w>
@@ -322,10 +527,11 @@ target_compile_options(${RENDERER_PREFIX}_opengl
             $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:RELWITHDEBINFO>>:${compiler_flags_relwithdebinfo}>
 )
 
+set_target_properties(${RENDERER_PREFIX}_opengl PROPERTIES PREFIX "")
+
 if(DYNAMIC_RENDERER)
     target_compile_definitions(${RENDERER_PREFIX}_opengl PUBLIC "USE_RENDERER_DLOPEN" "RENDERER_PREFIX=\"${RENDERER_PREFIX}\"")
-    set_target_properties(${RENDERER_PREFIX}_opengl PROPERTIES PREFIX "")
-    set_target_properties(${RENDERER_PREFIX}_opengl PROPERTIES SUFFIX "_x86.so") #NOTE changeme when multi-platform and multi-arch support is added
+    set_target_properties(${RENDERER_PREFIX}_opengl PROPERTIES SUFFIX "_${Architecture}${DLL_EXT}")
     target_link_libraries(${RENDERER_PREFIX}_opengl PRIVATE ${CMAKE_DL_LIBS} "m")
 endif(DYNAMIC_RENDERER)
 
@@ -364,6 +570,7 @@ set(dedicated_server_files
 )
 
 if(BUILD_CLIENT)
+    #find_package(OpenGL REQUIRED) detected at runtime
     if(USE_SYSTEM_JPEG)
         find_package(JPEG REQUIRED)
     endif(USE_SYSTEM_JPEG)
@@ -386,11 +593,19 @@ if(BUILD_CLIENT)
                 $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:RELEASE>>:${compiler_flags_release}>
                 $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:RELWITHDEBINFO>>:${compiler_flags_relwithdebinfo}>
     )
-    set_target_properties(ete PROPERTIES SUFFIX ".x86") #NOTE changeme when multi-platform and multi-arch support is added
+    if(X86)
+        set_target_properties(ete PROPERTIES SUFFIX ".x86")
+    else()
+        set_target_properties(ete PROPERTIES SUFFIX ".${Architecture}") #NOTE changeme when multi-platform and multi-arch support is added
+    endif(X86)
     target_include_directories(ete PUBLIC "${SRCDIR}/botlib ${SRCDIR}/server ${SRCDIR}/client ${SRCDIR}/qcommon")
     target_compile_definitions(ete PUBLIC "USE_CURL" "USE_CURL_DLOPEN")
     target_include_directories(ete PRIVATE ${CURL_INCLUDE_DIRS})
+    if(APPLE)
+    target_link_libraries(ete PRIVATE ${CMAKE_DL_LIBS} m pthread ${CURL_LIBRARIES})
+    else()
     target_link_libraries(ete PRIVATE ${CMAKE_DL_LIBS} m pthread X11 ${CURL_LIBRARIES})
+    endif()
     if(DYNAMIC_RENDERER)
         target_compile_definitions(ete PUBLIC "USE_RENDERER_DLOPEN" "RENDERER_PREFIX=\"${RENDERER_PREFIX}\"")
     endif(DYNAMIC_RENDERER)
@@ -425,12 +640,61 @@ if(BUILD_DEDSERVER)
                 $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:RELEASE>>:${compiler_flags_release}>
                 $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:RELWITHDEBINFO>>:${compiler_flags_relwithdebinfo}>
     )
-    set_target_properties(ete-ded PROPERTIES SUFFIX ".x86") #NOTE changeme when multi-platform and multi-arch support is added
+    if(X86)
+        set_target_properties(ete-ded PROPERTIES SUFFIX ".x86")
+    else()
+        set_target_properties(ete-ded PROPERTIES SUFFIX ".${Architecture}")
+    endif(X86)
     target_include_directories(ete-ded PUBLIC "${SRCDIR}/botlib ${SRCDIR}/server ${SRCDIR}/client ${SRCDIR}/qcommon")
     target_compile_definitions(ete-ded PUBLIC "DEDICATED")
     target_link_libraries(ete-ded PRIVATE ${CMAKE_DL_LIBS} "m")
     target_link_libraries(ete-ded PUBLIC botlib)
 endif(BUILD_DEDSERVER)
+
+if(BUILD_ETMAIN_MOD)
+    add_library(cgame SHARED "${cgame_files}")
+    target_compile_options(cgame
+        PRIVATE $<$<AND:$<COMPILE_LANGUAGE:C>,$<CONFIG:DEBUG>>:${compiler_flags_debug} -w>
+                $<$<AND:$<COMPILE_LANGUAGE:C>,$<CONFIG:RELEASE>>:${compiler_flags_release}>
+                $<$<AND:$<COMPILE_LANGUAGE:C>,$<CONFIG:RELWITHDEBINFO>>:${compiler_flags_relwithdebinfo} -w>
+                $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:DEBUG>>:${compiler_flags_debug} -w>
+                $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:RELEASE>>:${compiler_flags_release}>
+                $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:RELWITHDEBINFO>>:${compiler_flags_relwithdebinfo} -w>
+    )
+    set_target_properties(cgame PROPERTIES PREFIX "")
+    set_target_properties(cgame PROPERTIES SUFFIX "${LIB_SUFFIX}${Architecture}${DLL_EXT}") #NOTE changeme when multi-platform and multi-arch support is added
+    target_compile_definitions(cgame PUBLIC "CGAMEDLL")
+    target_link_libraries(cgame PRIVATE ${CMAKE_DL_LIBS} "m")
+
+    add_library(qagame SHARED "${qagame_files}")
+    target_compile_options(qagame
+        PRIVATE $<$<AND:$<COMPILE_LANGUAGE:C>,$<CONFIG:DEBUG>>:${compiler_flags_debug} -w>
+                $<$<AND:$<COMPILE_LANGUAGE:C>,$<CONFIG:RELEASE>>:${compiler_flags_release}>
+                $<$<AND:$<COMPILE_LANGUAGE:C>,$<CONFIG:RELWITHDEBINFO>>:${compiler_flags_relwithdebinfo} -w>
+                $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:DEBUG>>:${compiler_flags_debug} -w>
+                $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:RELEASE>>:${compiler_flags_release}>
+                $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:RELWITHDEBINFO>>:${compiler_flags_relwithdebinfo} -w>
+    )
+    set_target_properties(qagame PROPERTIES PREFIX "")
+    set_target_properties(qagame PROPERTIES SUFFIX "${LIB_SUFFIX}${Architecture}${DLL_EXT}") #NOTE changeme when multi-platform and multi-arch support is added
+    target_compile_definitions(qagame PUBLIC "GAMEDLL" "NO_BOT_SUPPORT")
+    target_link_libraries(qagame PRIVATE ${CMAKE_DL_LIBS} "m")
+
+    add_library(ui SHARED "${ui_files}")
+    target_compile_options(ui
+        PRIVATE $<$<AND:$<COMPILE_LANGUAGE:C>,$<CONFIG:DEBUG>>:${compiler_flags_debug} -w>
+                $<$<AND:$<COMPILE_LANGUAGE:C>,$<CONFIG:RELEASE>>:${compiler_flags_release}>
+                $<$<AND:$<COMPILE_LANGUAGE:C>,$<CONFIG:RELWITHDEBINFO>>:${compiler_flags_relwithdebinfo} -w>
+                $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:DEBUG>>:${compiler_flags_debug} -w>
+                $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:RELEASE>>:${compiler_flags_release}>
+                $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:RELWITHDEBINFO>>:${compiler_flags_relwithdebinfo} -w>
+    )
+    set_target_properties(ui PROPERTIES PREFIX "")
+    set_target_properties(ui PROPERTIES SUFFIX "${LIB_SUFFIX}${Architecture}${DLL_EXT}") #NOTE changeme when multi-platform and multi-arch support is added
+    target_compile_definitions(ui PUBLIC "UIDLL")
+    target_link_libraries(ui PRIVATE ${CMAKE_DL_LIBS} "m")
+
+endif(BUILD_ETMAIN_MOD)
 
 install(TARGETS ete ete-ded
         RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}
@@ -441,3 +705,9 @@ if(DYNAMIC_RENDERER)
             LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}
     )
 endif(DYNAMIC_RENDERER)
+
+if(BUILD_ETMAIN_MOD)
+    install(TARGETS cgame qagame ui
+            LIBRARY DESTINATION "${CMAKE_INSTALL_PREFIX}/etmain"
+    )
+endif(BUILD_ETMAIN_MOD)

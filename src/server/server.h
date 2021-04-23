@@ -371,7 +371,7 @@ extern cvar_t  *sv_onlyVisibleClients;
 
 extern cvar_t  *sv_showAverageBPS;          // NERVE - SMF - net debugging
 
-extern cvar_t* g_gameType;
+extern cvar_t* sv_gameType;
 
 extern cvar_t  *sv_leanPakRefs;
 

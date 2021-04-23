@@ -155,7 +155,7 @@ void R_BoxSurfaces_r( mnode_t *node, vec3_t mins, vec3_t maxs, surfaceType_t **l
 	}
 
 	// do the tail recursion in a loop
-	while ( node->contents == -1 ) {
+	while ( node->contents == CONTENTS_NODE ) {
 		s = BoxOnPlaneSide( mins, maxs, node->plane );
 		if ( s == 1 ) {
 			node = node->children[0];
@@ -282,6 +282,7 @@ R_OldMarkFragments
 
 =================
 */
+#if 0
 int R_OldMarkFragments( int numPoints, const vec3_t *points, const vec3_t projection,
 						int maxPoints, vec3_t pointBuffer, int maxFragments, markFragment_t *fragmentBuffer ) {
 	int numsurfaces, numPlanes;
@@ -527,6 +528,7 @@ int R_OldMarkFragments( int numPoints, const vec3_t *points, const vec3_t projec
 	}
 	return returnedFragments;
 }
+#endif
 
 /*
 =================

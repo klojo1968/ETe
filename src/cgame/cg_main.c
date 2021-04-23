@@ -44,6 +44,13 @@ qboolean CG_CheckExecKey( int key );
 extern itemDef_t* g_bindItem;
 extern qboolean g_waitingForKey;
 
+qboolean intShaderTime = qfalse;
+qboolean linearLight = qfalse;
+
+int dll_com_trapGetValue;
+int dll_trap_R_AddRefEntityToScene2;
+int dll_trap_R_AddLinearLightToScene;
+
 /*
 ================
 vmMain
@@ -52,13 +59,7 @@ This is the only way control passes into the module.
 This must be the very first function compiled into the .q3vm file
 ================
 */
-#if __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
-int vmMain( int command, int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11  ) {
-#if __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
+Q_EXPORT intptr_t vmMain( int command, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6 ) {
 	switch ( command ) {
 	case CG_INIT:
 		CG_Init( arg0, arg1, arg2, arg3 );
@@ -176,9 +177,6 @@ vmCvar_t cg_thirdPersonRange;
 vmCvar_t cg_thirdPersonAngle;
 vmCvar_t cg_stereoSeparation;
 vmCvar_t cg_lagometer;
-#ifdef ALLOW_GSYNC
-vmCvar_t cg_synchronousClients;
-#endif // ALLOW_GSYNC
 vmCvar_t cg_teamChatTime;
 vmCvar_t cg_teamChatHeight;
 vmCvar_t cg_stats;
@@ -195,8 +193,6 @@ vmCvar_t cg_autoactivate;
 vmCvar_t cg_blinktime;      //----(SA)	added
 
 vmCvar_t cg_smoothClients;
-vmCvar_t pmove_fixed;
-vmCvar_t pmove_msec;
 
 // Rafael - particle switch
 vmCvar_t cg_wolfparticles;
@@ -239,7 +235,7 @@ vmCvar_t cg_bluelimbotime;
 
 vmCvar_t cg_antilag;
 
-vmCvar_t developer;
+vmCvar_t cg_developer;
 
 // OSP
 vmCvar_t authLevel;
@@ -305,14 +301,16 @@ vmCvar_t cg_drawFireteamOverlay;
 vmCvar_t cg_drawSmallPopupIcons;
 
 //bani - demo recording cvars
-vmCvar_t cl_demorecording;
-vmCvar_t cl_demofilename;
-vmCvar_t cl_demooffset;
+vmCvar_t cg_demorecording;
+vmCvar_t cg_demofilename;
+vmCvar_t cg_demooffset;
 //bani - wav recording cvars
-vmCvar_t cl_waverecording;
-vmCvar_t cl_wavefilename;
-vmCvar_t cl_waveoffset;
+vmCvar_t cg_waverecording;
+vmCvar_t cg_wavefilename;
+vmCvar_t cg_waveoffset;
 vmCvar_t cg_recording_statusline;
+
+vmCvar_t cg_fovAdjust;
 
 typedef struct {
 	vmCvar_t    *vmCvar;
@@ -322,7 +320,7 @@ typedef struct {
 	int modificationCount;
 } cvarTable_t;
 
-cvarTable_t cvarTable[] = {
+static cvarTable_t cvarTable[] = {
 	{ &cg_ignore, "cg_ignore", "0", 0 },  // used for debugging
 	{ &cg_autoswitch, "cg_autoswitch", "2", CVAR_ARCHIVE },
 	{ &cg_drawGun, "cg_drawGun", "1", CVAR_ARCHIVE },
@@ -363,9 +361,9 @@ cvarTable_t cvarTable[] = {
 	{ &cg_markTime, "cg_marktime", "20000", CVAR_ARCHIVE },
 	{ &cg_lagometer, "cg_lagometer", "0", CVAR_ARCHIVE },
 	{ &cg_railTrailTime, "cg_railTrailTime", "400", CVAR_ARCHIVE  },
-	{ &cg_gun_x, "cg_gunX", "0", CVAR_CHEAT },
-	{ &cg_gun_y, "cg_gunY", "0", CVAR_CHEAT },
-	{ &cg_gun_z, "cg_gunZ", "0", CVAR_CHEAT },
+	{ &cg_gun_x, "cg_gunX", "0", CVAR_ARCHIVE },
+	{ &cg_gun_y, "cg_gunY", "0", CVAR_ARCHIVE },
+	{ &cg_gun_z, "cg_gunZ", "0", CVAR_ARCHIVE },
 	{ &cg_centertime, "cg_centertime", "5", CVAR_CHEAT },     // DHM - Nerve :: changed from 3 to 5
 	{ &cg_runpitch, "cg_runpitch", "0.002", CVAR_ARCHIVE},
 	{ &cg_runroll, "cg_runroll", "0.005", CVAR_ARCHIVE },
@@ -426,9 +424,6 @@ cvarTable_t cvarTable[] = {
 //	{ &cg_smoothClients, "cg_smoothClients", "0", CVAR_USERINFO | CVAR_ARCHIVE},
 	{ &cg_cameraMode, "com_cameraMode", "0", CVAR_CHEAT},
 
-	{ &pmove_fixed, "pmove_fixed", "0", 0},
-	{ &pmove_msec, "pmove_msec", "8", 0},
-
 	{ &cg_noTaunt, "cg_noTaunt", "0", CVAR_ARCHIVE},                      // NERVE - SMF
 	{ &cg_voiceSpriteTime, "cg_voiceSpriteTime", "6000", CVAR_ARCHIVE},       // DHM - Nerve
 
@@ -446,9 +441,6 @@ cvarTable_t cvarTable[] = {
 	{ &cg_paused, "cl_paused", "0", CVAR_ROM },
 
 	{ &cg_blood, "cg_showblood", "1", CVAR_ARCHIVE },
-#ifdef ALLOW_GSYNC
-	{ &cg_synchronousClients, "g_synchronousClients", "0", CVAR_SYSTEMINFO | CVAR_CHEAT },    // communicated by systeminfo
-#endif // ALLOW_GSYNC
 
 	// Rafael - particle switch
 	{ &cg_wolfparticles, "cg_wolfparticles", "1", CVAR_ARCHIVE },
@@ -464,7 +456,7 @@ cvarTable_t cvarTable[] = {
 	{ &cg_popupLimboMenu, "cg_popupLimboMenu", "1", CVAR_ARCHIVE },
 	{ &cg_descriptiveText, "cg_descriptiveText", "1", CVAR_ARCHIVE },
 	{ &cg_antilag, "g_antilag", "1", 0 },
-	{ &developer, "developer", "0", CVAR_CHEAT },
+	{ &cg_developer, "developer", "0", CVAR_CHEAT },
 	{ &cf_wstats, "cf_wstats", "1.2", CVAR_ARCHIVE },
 	{ &cf_wtopshots, "cf_wtopshots", "1.0", CVAR_ARCHIVE },
 	//{ &cg_announcer, "cg_announcer", "1", CVAR_ARCHIVE },
@@ -528,17 +520,19 @@ cvarTable_t cvarTable[] = {
 	{ &cg_drawSmallPopupIcons, "cg_drawSmallPopupIcons", "0", CVAR_ARCHIVE },
 
 	//bani - demo recording cvars
-	{ &cl_demorecording, "cl_demorecording", "0", CVAR_ROM },
-	{ &cl_demofilename, "cl_demofilename", "", CVAR_ROM },
-	{ &cl_demooffset, "cl_demooffset", "0", CVAR_ROM },
+	{ &cg_demorecording, "cl_demorecording", "0", CVAR_ROM },
+	{ &cg_demofilename, "cl_demofilename", "", CVAR_ROM },
+	{ &cg_demooffset, "cl_demooffset", "0", CVAR_ROM },
 	//bani - wav recording cvars
-	{ &cl_waverecording, "cl_waverecording", "0", CVAR_ROM },
-	{ &cl_wavefilename, "cl_wavefilename", "", CVAR_ROM },
-	{ &cl_waveoffset, "cl_waveoffset", "0", CVAR_ROM },
+	{ &cg_waverecording, "cl_waverecording", "0", CVAR_ROM },
+	{ &cg_wavefilename, "cl_wavefilename", "", CVAR_ROM },
+	{ &cg_waveoffset, "cl_waveoffset", "0", CVAR_ROM },
 	{ &cg_recording_statusline, "cg_recording_statusline", "9", CVAR_ARCHIVE },
+
+	{ &cg_fovAdjust, "cg_fovAdjust", "0", CVAR_ARCHIVE },
 };
 
-int cvarTableSize = sizeof( cvarTable ) / sizeof( cvarTable[0] );
+static const int cvarTableSize = (int)ARRAY_LEN( cvarTable );
 qboolean cvarsLoaded = qfalse;
 void CG_setClientFlags( void );
 
@@ -569,7 +563,7 @@ void CG_RegisterCvars( void ) {
 
 	// see if we are also running the server on this machine
 	trap_Cvar_VariableStringBuffer( "sv_running", var, sizeof( var ) );
-	cgs.localServer = atoi( var );
+	cgs.localServer = atoi( var ) != 0 ? qtrue : qfalse;
 
 	// Gordon: um, here, why?
 	CG_setClientFlags();
@@ -702,7 +696,7 @@ void QDECL CG_Printf( const char *msg, ... ) {
 	trap_Print( text );
 }
 
-void QDECL CG_Error( const char *msg, ... ) {
+void NORETURN QDECL CG_Error( const char *msg, ... ) {
 	va_list argptr;
 	char text[1024];
 
@@ -716,7 +710,7 @@ void QDECL CG_Error( const char *msg, ... ) {
 #ifndef CGAME_HARD_LINKED
 // this is only here so the functions in q_shared.c and bg_*.c can link (FIXME)
 
-void QDECL Com_Error( errorParm_t level, const char *error, ... ) {
+void NORETURN QDECL Com_Error( errorParm_t code, const char *error, ... ) {
 	va_list argptr;
 	char text[1024];
 
@@ -793,7 +787,7 @@ void CG_nameCleanFilename( const char *pszIn, char *pszOut, unsigned int dwOutSi
 }
 
 // Standard naming for screenshots/demos
-char *CG_generateFilename( void ) {
+const char *CG_generateFilename( void ) {
 	qtime_t ct;
 //	int index = (cg.snap == NULL || (cg.snap->ps.pm_flags & PMF_LIMBO)) ? cg.clientNum : cg.snap->ps.clientNum;
 //	char strCleanName[64];
@@ -809,7 +803,7 @@ char *CG_generateFilename( void ) {
 				( cg.mvTotalClients < 1 ) ? "" : "-MVD" ) );
 }
 
-int CG_findClientNum( char *s ) {
+int CG_findClientNum( const char *s ) {
 	int id;
 	char s2[64], n2[64];
 	qboolean fIsNumber = qtrue;
@@ -847,7 +841,7 @@ int CG_findClientNum( char *s ) {
 	return( -1 );
 }
 
-void CG_printConsoleString( char *str ) {
+void CG_printConsoleString( const char *str ) {
 	CG_Printf( "[skipnotify]%s", str );
 }
 
@@ -939,8 +933,8 @@ void CG_LoadObjectiveData( void ) {
 //========================================================================
 void CG_SetupDlightstyles( void ) {
 	int i, j;
-	char        *str;
-	char        *token;
+	const char *str;
+	const char *token;
 	int entnum;
 	centity_t   *cent;
 
@@ -948,7 +942,7 @@ void CG_SetupDlightstyles( void ) {
 
 	for ( i = 1; i < MAX_DLIGHT_CONFIGSTRINGS; i++ )
 	{
-		str = (char *) CG_ConfigString( CS_DLIGHTS + i );
+		str = CG_ConfigString( CS_DLIGHTS + i );
 		if ( !strlen( str ) ) {
 			break;
 		}
@@ -1284,7 +1278,6 @@ qboolean CG_RegisterClientModelname( bg_playerclass_t* classInfo );
 void WM_RegisterWeaponTypeShaders();
 
 static void CG_RegisterGraphics( void ) {
-	char name[1024];
 	int i;
 	static char     *sb_nums[11] = {
 		"gfx/2d/numbers/zero_32b",
@@ -1722,8 +1715,9 @@ static void CG_RegisterGraphics( void ) {
 
 	for ( i = 0; i < MAX_LOCKER_DEBRIS; i++ )
 	{
-		Com_sprintf( name, sizeof( name ), "models/mapobjects/debris/personal%i.md3", i + 1 );
-		cgs.media.shardJunk[i] = trap_R_RegisterModel( name );
+		char shardName[MAX_QPATH];
+		Com_sprintf( shardName, sizeof( shardName ), "models/mapobjects/debris/personal%i.md3", i + 1 );
+		cgs.media.shardJunk[i] = trap_R_RegisterModel( shardName );
 	}
 
 	memset( cg_items, 0, sizeof( cg_items ) );
@@ -2038,11 +2032,11 @@ CG_StartMusic
 ======================
 */
 void CG_StartMusic( void ) {
-	char    *s;
+	const char *s;
 	char parm1[MAX_QPATH], parm2[MAX_QPATH];
 
 	// start the background music
-	s = (char *)CG_ConfigString( CS_MUSIC );
+	s = CG_ConfigString( CS_MUSIC );
 	Q_strncpyz( parm1, COM_Parse( &s ), sizeof( parm1 ) );
 	Q_strncpyz( parm2, COM_Parse( &s ), sizeof( parm2 ) );
 
@@ -2057,11 +2051,11 @@ CG_QueueMusic
 ==============
 */
 void CG_QueueMusic( void ) {
-	char    *s;
+	const char *s;
 	char parm[MAX_QPATH];
 
 	// prepare the next background track
-	s = (char *)CG_ConfigString( CS_MUSIC_QUEUE );
+	s = CG_ConfigString( CS_MUSIC_QUEUE );
 	Q_strncpyz( parm, COM_Parse( &s ), sizeof( parm ) );
 
 	// even if no strlen(parm).  we want to be able to clear the queue
@@ -2280,8 +2274,8 @@ void CG_ParseMenu( const char *menuFile ) {
 	trap_PC_FreeSource( handle );
 }
 
-qboolean CG_Load_Menu( char **p ) {
-	char *token;
+qboolean CG_Load_Menu( const char **p ) {
+	const char *token;
 
 	token = COM_ParseExt( p, qtrue );
 
@@ -2307,10 +2301,9 @@ qboolean CG_Load_Menu( char **p ) {
 }
 
 
-
 void CG_LoadMenus( const char *menuFile ) {
-	char    *token;
-	char *p;
+	const char *token;
+	const char *p;
 	int len, start;
 	fileHandle_t f;
 	static char buf[MAX_MENUDEFFILE];
@@ -2643,9 +2636,10 @@ Will perform callbacks to make the loading info screen update.
 */
 #ifdef _DEBUG
 #define DEBUG_INITPROFILE_INIT int elapsed, dbgTime = trap_Milliseconds();
-#define DEBUG_INITPROFILE_EXEC( f ) if ( developer.integer ) { CG_Printf( "^5%s passed in %i msec\n", f, elapsed = trap_Milliseconds() - dbgTime );  dbgTime += elapsed; }
+#define DEBUG_INITPROFILE_EXEC( f ) if ( cg_developer.integer ) { CG_Printf( "^5%s passed in %i msec\n", f, elapsed = trap_Milliseconds() - dbgTime );  dbgTime += elapsed; }
 #endif // _DEBUG
 void CG_Init( int serverMessageNum, int serverCommandSequence, int clientNum, qboolean demoPlayback ) {
+	char  value[MAX_CVAR_VALUE_STRING];
 	const char  *s;
 	int i;
 #ifdef _DEBUG
@@ -2691,6 +2685,19 @@ void CG_Init( int serverMessageNum, int serverCommandSequence, int clientNum, qb
 	cgs.ccRequestedObjective = -1;
 	cgs.ccCurrentCamObjective = -2;
 
+	trap_Cvar_VariableStringBuffer( "//trap_GetValue", value, sizeof( value ) );
+	if ( value[0] ) {
+		dll_com_trapGetValue = atoi( value );
+		if ( trap_GetValue( value, sizeof( value ), "trap_R_AddRefEntityToScene2" ) ) {
+			dll_trap_R_AddRefEntityToScene2 = atoi( value );
+			intShaderTime = qtrue;
+		}
+		if ( trap_GetValue( value, sizeof( value ), "trap_R_AddLinearLightToScene_ETE" ) ) {
+			dll_trap_R_AddLinearLightToScene = atoi( value );
+			linearLight = qtrue;
+		}
+	}
+
 	// load a few needed things before we do any screen updates
 	cgs.media.charsetShader     = trap_R_RegisterShader( "gfx/2d/hudchars" ); //trap_R_RegisterShader( "gfx/2d/bigchars" );
 	// JOSEPH 4-17-00
@@ -2715,6 +2722,7 @@ void CG_Init( int serverMessageNum, int serverCommandSequence, int clientNum, qb
 	cg.warmupCount = -1;
 
 	CG_ParseServerinfo();
+	CG_ParseSysteminfo();
 	CG_ParseWolfinfo();     // NERVE - SMF
 
 	cgs.campaignInfoLoaded = qfalse;

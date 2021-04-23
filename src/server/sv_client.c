@@ -1062,7 +1062,7 @@ static void SV_SendClientGameState( client_t *client ) {
 	}
 
 	// NERVE - SMF - debug info
-	Com_DPrintf( "Sending %i bytes in gamestate to client: %i\n", msg.cursize, client - svs.clients );
+	Com_DPrintf( "Sending %i bytes in gamestate to client: %i\n", msg.cursize, (int)(client - svs.clients) );
 
 	// deliver this to the client
 	SV_SendMessageToClient( &msg, client );
@@ -1491,7 +1491,7 @@ static int SV_WriteDownloadToClient( client_t *cl, msg_t *msg )
 		cl->bWWWDl = qfalse;
 		cl->downloadSize = FS_SV_FOpenFileRead( cl->downloadName, &cl->download );
 		if ( cl->downloadSize <= 0 ) {
-			Com_Printf( "clientDownload: %d : \"%s\" file not found on server\n", cl - svs.clients, cl->downloadName );
+			Com_Printf( "clientDownload: %d : \"%s\" file not found on server\n", (int)(cl - svs.clients), cl->downloadName );
 			Com_sprintf( errorMessage, sizeof( errorMessage ), "File \"%s\" not found on server for autodownloading.\n", cl->downloadName );
 			SV_BadDownload( cl, msg );
 			MSG_WriteString( msg, errorMessage ); // (could SV_DropClient isntead?)

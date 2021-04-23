@@ -151,6 +151,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #define OS_STRING "macOS"
 #undef DLL_EXT
+#undef REN_DLL_EXT
 #define DLL_EXT "_mac"
 #define REN_DLL_EXT ".dylib"
 #if defined (__i386__)

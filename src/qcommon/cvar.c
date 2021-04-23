@@ -204,6 +204,21 @@ void Cvar_VariableStringBufferSafe( const char *var_name, char *buffer, int bufs
 
 /*
 ============
+Cvar_LatchedVariableString
+============
+*/
+const char *Cvar_LatchedVariableString( const char *var_name ) {
+	cvar_t *var;
+	
+	var = Cvar_FindVar (var_name);
+	if (!var)
+		return "";
+	return var->latchedString ? var->latchedString : var->string;
+}
+
+
+/*
+============
 Cvar_LatchedVariableStringBuffer
 ============
 */
@@ -222,20 +237,21 @@ void Cvar_LatchedVariableStringBuffer( const char *var_name, char *buffer, int b
 	}
 }
 
+
 /*
 ============
 Cvar_Flags
 ============
 */
-int Cvar_Flags(const char *var_name)
+unsigned Cvar_Flags( const char *var_name )
 {
-	cvar_t *var;
+	const cvar_t *var;
 	
-	if( (var = Cvar_FindVar(var_name)) == NULL )
+	if ( ( var = Cvar_FindVar( var_name ) ) == NULL )
 		return CVAR_NONEXISTENT;
 	else
 	{
-		if(var->modified)
+		if ( var->modified )
 			return var->flags | CVAR_MODIFIED;
 		else
 			return var->flags;
@@ -248,14 +264,14 @@ int Cvar_Flags(const char *var_name)
 Cvar_CommandCompletion
 ============
 */
-void Cvar_CommandCompletion(void (*callback)(const char *s))
+void Cvar_CommandCompletion( void (*callback)(const char *s) )
 {
-	cvar_t		*cvar;
-	
-	for(cvar = cvar_vars; cvar; cvar = cvar->next)
-	{
-		if(cvar->name)
-			callback(cvar->name);
+	const cvar_t *cvar;
+
+	for ( cvar = cvar_vars; cvar; cvar = cvar->next ) {
+		if ( cvar->name && ( cvar->flags & CVAR_NOTABCOMPLETE ) == 0 ) {
+			callback( cvar->name );
+		}
 	}
 }
 
@@ -344,10 +360,10 @@ static const char *Cvar_Validate( cvar_t *var, const char *value, qboolean warn 
 					limit = var->maxs;
 				}
 			} else { // CV_FLOAT
-				valuef = atof( value );
-				if ( var->mins && valuef < atof( var->mins ) ) {
+				valuef = Q_atof( value );
+				if ( var->mins && valuef < Q_atof( var->mins ) ) {
 					limit = var->mins;
-				} else if ( var->maxs && valuef > atof( var->maxs ) ) {
+				} else if ( var->maxs && valuef > Q_atof( var->maxs ) ) {
 					limit = var->maxs;
 				}
 			}
@@ -438,6 +454,8 @@ cvar_t *Cvar_Get( const char *var_name, const char *var_value, int flags ) {
 	
 	if(var)
 	{
+		int vm_created = (flags & CVAR_VM_CREATED);
+
 		//if ( ( var->flags & CVAR_USERINFO ) || ( flags & CVAR_USERINFO ) )
 		//	var->validator = CV_USERINFO;
 
@@ -446,12 +464,12 @@ cvar_t *Cvar_Get( const char *var_name, const char *var_value, int flags ) {
 		// Make sure the game code cannot mark engine-added variables as gamecode vars
 		if(var->flags & CVAR_VM_CREATED)
 		{
-			if(!(flags & CVAR_VM_CREATED))
+			if ( !vm_created )
 				var->flags &= ~CVAR_VM_CREATED;
 		}
 		else if (!(var->flags & CVAR_USER_CREATED))
 		{
-			if(flags & CVAR_VM_CREATED)
+			if ( vm_created )
 				flags &= ~CVAR_VM_CREATED;
 		}
 
@@ -474,19 +492,30 @@ cvar_t *Cvar_Get( const char *var_name, const char *var_value, int flags ) {
 				var->latchedString = CopyString(var_value);
 			}
 		}
-		
+
 		// Make sure servers cannot mark engine-added variables as SERVER_CREATED
-		if(var->flags & CVAR_SERVER_CREATED)
+		if ( var->flags & CVAR_SERVER_CREATED )
 		{
-			if(!(flags & CVAR_SERVER_CREATED))
+			if ( !( flags & CVAR_SERVER_CREATED ) ) {
+				// reset server-created flag
 				var->flags &= ~CVAR_SERVER_CREATED;
+				if ( vm_created ) {
+					// reset to state requested by local VM module
+					var->flags &= ~CVAR_ROM;
+					Z_Free( var->resetString );
+					var->resetString = CopyString( var_value );
+					if ( var->latchedString )
+						Z_Free( var->latchedString );
+					var->latchedString = CopyString( var_value );
+				}
+			}
 		}
 		else
 		{
-			if(flags & CVAR_SERVER_CREATED)
+			if ( flags & CVAR_SERVER_CREATED )
 				flags &= ~CVAR_SERVER_CREATED;
 		}
-		
+
 		var->flags |= flags;
 
 		// only allow one non-empty reset string without a warning
@@ -554,7 +583,7 @@ cvar_t *Cvar_Get( const char *var_name, const char *var_value, int flags ) {
 	var->string = CopyString( var_value );
 	var->modified = qtrue;
 	var->modificationCount = 1;
-	var->value = atof( var->string );
+	var->value = Q_atof( var->string );
 	var->integer = atoi( var->string );
 	var->resetString = CopyString( var_value );
 	var->validator = CV_NONE;
@@ -727,14 +756,8 @@ cvar_t *Cvar_Set2( const char *var_name, const char *value, qboolean force ) {
 #ifdef DEDICATED
 			Com_Printf( FOREIGN_MSG );
 #else
-	#ifdef __GNUC__
-	#pragma GCC diagnostic ignored "-Wformat-security"
+			Com_Printf( "%s", CL_TranslateStringBuf( FOREIGN_MSG ) );
 	#endif
-			Com_Printf( CL_TranslateStringBuf( FOREIGN_MSG ) );
-	#ifdef __GNUC__
-	#pragma GCC diagnostic pop
-	#endif
-#endif
 			Com_Printf( "Using %s instead of %s\n", cleaned, value );
 			return Cvar_Set2( var_name, cleaned, force );
 		}
@@ -831,9 +854,9 @@ cvar_t *Cvar_Set2( const char *var_name, const char *value, qboolean force ) {
 	
 	Z_Free (var->string);	// free the old value string
 	
-	var->string = CopyString(value);
-	var->value = atof (var->string);
-	var->integer = atoi (var->string);
+	var->string = CopyString( value );
+	var->value = Q_atof( var->string );
+	var->integer = atoi( var->string );
 
 	return var;
 }
@@ -856,7 +879,7 @@ Cvar_SetSafe
 */
 void Cvar_SetSafe( const char *var_name, const char *value )
 {
-	int flags = Cvar_Flags( var_name );
+	unsigned flags = Cvar_Flags( var_name );
 	qboolean force = qtrue;
 
 	if ( flags != CVAR_NONEXISTENT )
@@ -1268,7 +1291,7 @@ static const char *GetValue( int index, int *ival, float *fval )
 	if ( !var ) // cvar not found, return string
 	{
 		*ival = atoi( cmd );
-		*fval = atof( cmd );
+		*fval = Q_atof( cmd );
 		Q_strncpyz( buf, cmd, sizeof( buf ) );
 		return buf;
 	}
@@ -1512,6 +1535,7 @@ void Cvar_WriteVariables( fileHandle_t f )
 			continue;
 
 		if ( var->flags & CVAR_ARCHIVE ) {
+			int len;
 			// write the latched value, even if it hasn't taken effect yet
 			value = var->latchedString ? var->latchedString : var->string;
 			if ( strlen( var->name ) + strlen( value ) + strLength > sizeof( buffer ) ) {
@@ -1523,11 +1547,11 @@ void Cvar_WriteVariables( fileHandle_t f )
 				continue;
 			}
 			if ( var->flags & CVAR_UNSAFE )
-				Com_sprintf( buffer, sizeof( buffer ), "seta %s \"%s\"" " unsafe" Q_NEWLINE, var->name, value );
+				len = Com_sprintf( buffer, sizeof( buffer ), "seta %s \"%s\"" " unsafe" Q_NEWLINE, var->name, value );
 			else
-				Com_sprintf( buffer, sizeof( buffer ), "seta %s \"%s\"" Q_NEWLINE, var->name, value );
+				len = Com_sprintf( buffer, sizeof( buffer ), "seta %s \"%s\"" Q_NEWLINE, var->name, value );
 
-			FS_Write( buffer, strlen( buffer ), f );
+			FS_Write( buffer, len, f );
 		}
 	}
 }
@@ -1542,6 +1566,12 @@ static void Cvar_List_f( void ) {
 	cvar_t	*var;
 	int		i;
 	char	*match;
+
+	// sort to get more predictable output
+	if ( cvar_sort ) {
+		cvar_sort = qfalse;
+		Cvar_Sort();
+	}
 
 	if ( Cmd_Argc() > 1 ) {
 		match = Cmd_Argv( 1 );
@@ -1624,6 +1654,12 @@ static void Cvar_ListModified_f( void ) {
 	int		totalModified;
 	const char *value;
 	const char *match;
+
+	// sort to get more predictable output
+	if ( cvar_sort ) {
+		cvar_sort = qfalse;
+		Cvar_Sort();
+	}
 
 	if ( Cmd_Argc() > 1 ) {
 		match = Cmd_Argv( 1 );
@@ -2367,5 +2403,5 @@ void Cvar_Init (void)
 	Cmd_AddCommand ("cvar_trim", Cvar_Trim_f);
 
 	// NERVE - SMF - can't rely on autoexec to do this
-	Cvar_Get( "devdll", "1", CVAR_ROM );
+	//Cvar_Get( "devdll", "1", CVAR_ROM );
 }

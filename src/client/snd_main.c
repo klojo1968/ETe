@@ -298,7 +298,7 @@ void S_UpdateEntityPosition( int entityNum, const vec3_t origin )
 S_Update
 =================
 */
-void S_Update( void )
+void S_Update( int msec )
 {
 	/*if(s_muted->integer)
 	{
@@ -320,7 +320,7 @@ void S_Update( void )
 	}*/
 	
 	if( si.Update ) {
-		si.Update( );
+		si.Update( msec );
 	}
 }
 
@@ -669,15 +669,21 @@ void S_Init( void )
 	s_musicVolume = Cvar_Get( "s_musicvolume", "0.25", CVAR_ARCHIVE );
 	s_doppler = Cvar_Get( "s_doppler", "1", CVAR_ARCHIVE_ND );
 	s_backend = Cvar_Get( "s_backend", "", CVAR_ROM );
-	s_muteWhenMinimized = Cvar_Get( "s_muteWhenMinimized", "1", CVAR_ARCHIVE );
 	s_muteWhenUnfocused = Cvar_Get( "s_muteWhenUnfocused", "1", CVAR_ARCHIVE );
+	s_muteWhenMinimized = Cvar_Get( "s_muteWhenMinimized", "1", CVAR_ARCHIVE );
+
+	Cvar_CheckRange( s_volume, "0", "1", CV_FLOAT );
+	Cvar_CheckRange( s_musicVolume, "0", "1", CV_FLOAT );
+	Cvar_CheckRange( s_doppler, "0", "1", CV_INTEGER );
+	Cvar_CheckRange( s_muteWhenUnfocused, "0", "1", CV_INTEGER );
+	Cvar_CheckRange( s_muteWhenMinimized, "0", "1", CV_INTEGER );
 
 	cv = Cvar_Get( "s_initsound", "1", 0 );
-	if( !cv->integer ) {
+	if ( !cv->integer ) {
 		Com_Printf( "Sound disabled.\n" );
 	} else {
 
-		S_CodecInit( );
+		S_CodecInit();
 
 		Cmd_AddCommand( "play", S_Play_f );
 		Cmd_AddCommand( "music", S_Music_f );
@@ -714,6 +720,7 @@ void S_Init( void )
 
 	Com_Printf( "--------------------------------\n");
 }
+
 
 /*
 =================

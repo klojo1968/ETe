@@ -438,7 +438,7 @@ BG_ModelInfoForModelname
 BG_AnimationIndexForString
 =================
 */
-static int BG_AnimationIndexForString( char *string, animModelInfo_t* animModelInfo ) {
+static int BG_AnimationIndexForString( const char *string, animModelInfo_t* animModelInfo ) {
 	int i, hash;
 	animation_t *anim;
 
@@ -461,7 +461,7 @@ static int BG_AnimationIndexForString( char *string, animModelInfo_t* animModelI
 BG_AnimationForString
 =================
 */
-animation_t *BG_AnimationForString( char *string, animModelInfo_t *animModelInfo ) {
+animation_t *BG_AnimationForString( const char *string, animModelInfo_t *animModelInfo ) {
 	int i, hash;
 	animation_t *anim;
 
@@ -486,7 +486,7 @@ BG_IndexForString
   errors out if no match found
 =================
 */
-int BG_IndexForString( char *token, animStringItem_t *strings, qboolean allowFail ) {
+int BG_IndexForString( const char *token, animStringItem_t *strings, qboolean allowFail ) {
 	int i, hash;
 	animStringItem_t *strav;
 
@@ -514,7 +514,7 @@ int BG_IndexForString( char *token, animStringItem_t *strings, qboolean allowFai
 BG_CopyStringIntoBuffer
 ===============
 */
-char *BG_CopyStringIntoBuffer( char *string, char *buffer, int bufSize, int *offset ) {
+static char *BG_CopyStringIntoBuffer( const char *string, char *buffer, int bufSize, int *offset ) {
 	char *pch;
 
 	// check for overloaded buffer
@@ -572,7 +572,7 @@ BG_ParseConditionBits
   convert the string into a single int containing bit flags, stopping at a ',' or end of line
 =================
 */
-void BG_ParseConditionBits( char **text_pp, animStringItem_t *stringTable, int condIndex, int result[2] ) {
+static void BG_ParseConditionBits( const char **text_pp, animStringItem_t *stringTable, int condIndex, int result[2] ) {
 	qboolean endFlag = qfalse;
 	int indexFound;
 	int /*indexBits,*/ tempBits[2];
@@ -582,7 +582,7 @@ void BG_ParseConditionBits( char **text_pp, animStringItem_t *stringTable, int c
 
 	//indexBits = 0;
 	currentString[0] = '\0';
-	memset( result, 0, sizeof( result ) );
+	memset( result, 0, sizeof( result[0] ) * 2 );
 	memset( tempBits, 0, sizeof( tempBits ) );
 
 	while ( !endFlag ) {
@@ -685,7 +685,7 @@ BG_ParseConditions
   returns qtrue if everything went ok, error drops otherwise
 =================
 */
-qboolean BG_ParseConditions( char **text_pp, animScriptItem_t *scriptItem ) {
+static qboolean BG_ParseConditions( const char **text_pp, animScriptItem_t *scriptItem ) {
 	int conditionIndex, conditionValue[2];
 	char    *token;
 
@@ -748,8 +748,8 @@ qboolean BG_ParseConditions( char **text_pp, animScriptItem_t *scriptItem ) {
 BG_ParseCommands
 =================
 */
-static void BG_ParseCommands( char **input, animScriptItem_t *scriptItem, animModelInfo_t *animModelInfo, animScriptData_t *scriptData ) {
-	char    *token;
+static void BG_ParseCommands( const char **input, animScriptItem_t *scriptItem, animModelInfo_t *animModelInfo, animScriptData_t *scriptData ) {
+	const char    *token;
 	// TTimo gcc: might be used uninitialized
 	animScriptCommand_t *command = NULL;
 	int partIndex = 0;
@@ -773,7 +773,7 @@ static void BG_ParseCommands( char **input, animScriptItem_t *scriptItem, animMo
 				BG_AnimParseError( "BG_ParseCommands: exceeded maximum number of animations (%i)", MAX_ANIMSCRIPT_ANIMCOMMANDS );
 			}
 			command = &scriptItem->commands[scriptItem->numCommands++];
-			memset( command, 0, sizeof( command ) );
+			memset( command, 0, sizeof( *command ) );
 		}
 
 		command->bodyPart[partIndex] = BG_IndexForString( token, animBodyPartsStr, qtrue );
@@ -886,7 +886,7 @@ void BG_AnimParseAnimScript( animModelInfo_t *animModelInfo, animScriptData_t *s
 
 	// FIXME: change this to use the botlib parser
 
-	char                    *text_p, *token;
+	const char              *text_p, *token;
 	animScriptParseMode_t parseMode;
 	animScript_t            *currentScript;
 	animScriptItem_t tempScriptItem;
@@ -1661,7 +1661,7 @@ int BG_GetConditionValue( int client, int condition, qboolean checkConversion ) 
 			return 0;
 		} else {
 			// xkan, 1/14/2003 - must use COM_BitCheck on the result.
-			return (int)globalScriptData->clientConditions[client][condition];
+			return (intptr_t)globalScriptData->clientConditions[client][condition];
 		}
 		//BG_AnimParseError( "BG_GetConditionValue: internal error" );
 	} else {

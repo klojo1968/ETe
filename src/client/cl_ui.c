@@ -36,10 +36,6 @@ extern botlib_export_t *botlib_export;
 vm_t *uivm = NULL;
 
 
-// ydnar: can we put this in a header, pls?
-void Key_GetBindingByString( const char* binding, int* key1, int* key2 );
-
-
 /*
 ====================
 GetClientState
@@ -83,7 +79,7 @@ void LAN_LoadCachedServers( void ) {
 			FS_FCloseFile( fileIn );
 		}
 		return;
-	} 
+	}
 
 	FS_Read( &cls.numglobalservers, sizeof(int), fileIn );
 	FS_Read( &cls.numfavoriteservers, sizeof(int), fileIn );
@@ -107,7 +103,6 @@ LAN_SaveServersToCache
 ====================
 */
 void LAN_SaveServersToCache( void ) {
-	
 	fileHandle_t fileOut;
 	int size;
 	char filename[MAX_QPATH];
@@ -735,34 +730,6 @@ static void CL_GetClipboardData( char *buf, int buflen ) {
 
 /*
 ====================
-Key_KeynumToStringBuf
-====================
-*/
-void Key_KeynumToStringBuf( int keynum, char *buf, int buflen ) {
-	Q_strncpyz( buf, Key_KeynumToString( keynum, qtrue ), buflen );
-}
-
-
-/*
-====================
-Key_GetBindingBuf
-====================
-*/
-void Key_GetBindingBuf( int keynum, char *buf, int buflen ) {
-	const char *value;
-
-	value = Key_GetBinding( keynum );
-	if ( value ) {
-		Q_strncpyz( buf, value, buflen );
-	}
-	else {
-		*buf = '\0';
-	}
-}
-
-
-/*
-====================
 CLUI_GetCDKey
 ====================
 */
@@ -792,7 +759,7 @@ static int GetConfigString(int index, char *buf, int size)
 	}
 
 	Q_strncpyz( buf, cl.gameState.stringData+offset, size);
- 
+
 	return qtrue;
 }
 
@@ -838,6 +805,11 @@ static qboolean UI_GetValue( char* value, int valueSize, const char* key ) {
 		return qtrue;
 	}
 
+	if ( !Q_stricmp( key, "trap_RemoveCommand") ) {
+		Com_sprintf( value, valueSize, "%i", UI_REMOVECOMMAND );
+		return qtrue;
+	}
+
 	return qfalse;
 }
 
@@ -865,7 +837,7 @@ static intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return Sys_Milliseconds();
 
 	case UI_CVAR_REGISTER:
-		Cvar_Register( VMA(1), VMA(2), VMA(3), args[4] ); 
+		Cvar_Register( VMA(1), VMA(2), VMA(3), args[4] );
 		return 0;
 
 	case UI_CVAR_UPDATE:
@@ -884,7 +856,7 @@ static intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return 0;
 
 	case UI_CVAR_LATCHEDVARIABLESTRINGBUFFER:
-		Cvar_LatchedVariableStringBuffer( VMA( 1 ), VMA( 2 ), args[3] );
+		Cvar_LatchedVariableStringBuffer( VMA(1), VMA(2), args[3] );
 		return 0;
 
 	case UI_CVAR_SETVALUE:
@@ -925,11 +897,11 @@ static intptr_t CL_UISystemCalls( intptr_t *args ) {
 
 	case UI_ADDCOMMAND:
 		// ENSI TODO we should keep track of these since there is no remove function
-		Cmd_AddCommand( VMA( 1 ), NULL );
+		Cmd_AddCommand( VMA(1), NULL );
 		// Check to see if mod defines any new/additional map commands
 		// Hook them up to the completion functor
 		{
-			const char *cmd_name = VMA( 1 );
+			const char *cmd_name = VMA(1);
 			if( COM_SuffixCompare( cmd_name, "devmap" ) ||
 				COM_SuffixCompare( cmd_name, "map" ) )
 			{
@@ -954,19 +926,19 @@ static intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return 0;
 
 	case UI_FS_DELETEFILE:
-		return FS_Delete( VMA( 1 ) );
+		return FS_Delete( VMA(1) );
 
 	case UI_FS_GETFILELIST:
-		return FS_GetFileList( VMA( 1 ), VMA( 2 ), VMA( 3 ), args[4] );
+		return FS_GetFileList( VMA(1), VMA(2), VMA(3), args[4] );
 
 	case UI_R_REGISTERMODEL:
-		return re.RegisterModel( VMA( 1 ) );
+		return re.RegisterModel( VMA(1) );
 
 	case UI_R_REGISTERSKIN:
-		return re.RegisterSkin( VMA( 1 ) );
+		return re.RegisterSkin( VMA(1) );
 
 	case UI_R_REGISTERSHADERNOMIP:
-		return re.RegisterShaderNoMip( VMA( 1 ) );
+		return re.RegisterShaderNoMip( VMA(1) );
 
 	case UI_R_CLEARSCENE:
 		re.ClearScene();
@@ -977,43 +949,43 @@ static intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return 0;
 
 	case UI_R_ADDPOLYTOSCENE:
-		re.AddPolyToScene( args[1], args[2], VMA( 3 ) );
+		re.AddPolyToScene( args[1], args[2], VMA(3) );
 		return 0;
 
 		// Ridah
 	case UI_R_ADDPOLYSTOSCENE:
-		re.AddPolysToScene( args[1], args[2], VMA( 3 ), args[4] );
+		re.AddPolysToScene( args[1], args[2], VMA(3), args[4] );
 		return 0;
 		// done.
 
 	case UI_R_ADDLIGHTTOSCENE:
 		// ydnar: new dlight code
 		//%	re.AddLightToScene( VMA(1), VMF(2), VMF(3), VMF(4), VMF(5), args[6] );
-		re.AddLightToScene( VMA( 1 ), VMF( 2 ), VMF( 3 ), VMF( 4 ), VMF( 5 ), VMF( 6 ), args[7], args[8] );
+		re.AddLightToScene( VMA(1), VMF(2), VMF(3), VMF(4), VMF(5), VMF(6), args[7], args[8] );
 		return 0;
 
 	case UI_R_ADDCORONATOSCENE:
-		re.AddCoronaToScene( VMA( 1 ), VMF( 2 ), VMF( 3 ), VMF( 4 ), VMF( 5 ), args[6], args[7] );
+		re.AddCoronaToScene( VMA(1), VMF(2), VMF(3), VMF(4), VMF(5), args[6], args[7] );
 		return 0;
 
 	case UI_R_RENDERSCENE:
-		re.RenderScene( VMA( 1 ) );
+		re.RenderScene( VMA(1) );
 		return 0;
 
 	case UI_R_SETCOLOR:
-		re.SetColor( VMA( 1 ) );
+		re.SetColor( VMA(1) );
 		return 0;
 
 	case UI_R_DRAW2DPOLYS:
-		re.Add2dPolys( VMA( 1 ), args[2], args[3] );
+		re.Add2dPolys( VMA(1), args[2], args[3] );
 		return 0;
 
 	case UI_R_DRAWSTRETCHPIC:
-		re.DrawStretchPic( VMF( 1 ), VMF( 2 ), VMF( 3 ), VMF( 4 ), VMF( 5 ), VMF( 6 ), VMF( 7 ), VMF( 8 ), args[9] );
+		re.DrawStretchPic( VMF(1), VMF(2), VMF(3), VMF(4), VMF(5), VMF(6), VMF(7), VMF(8), args[9] );
 		return 0;
 
 	case UI_R_DRAWROTATEDPIC:
-		re.DrawRotatedPic( VMF( 1 ), VMF( 2 ), VMF( 3 ), VMF( 4 ), VMF( 5 ), VMF( 6 ), VMF( 7 ), VMF( 8 ), args[9], VMF( 10 ) );
+		re.DrawRotatedPic( VMF(1), VMF(2), VMF(3), VMF(4), VMF(5), VMF(6), VMF(7), VMF(8), args[9], VMF(10) );
 		return 0;
 
 	case UI_R_MODELBOUNDS:
@@ -1025,41 +997,37 @@ static intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return 0;
 
 	case UI_CM_LERPTAG:
-		return re.LerpTag( VMA( 1 ), VMA( 2 ), VMA( 3 ), args[4] );
+		return re.LerpTag( VMA(1), VMA(2), VMA(3), args[4] );
 
 	case UI_S_REGISTERSOUND:
-#ifdef DOOMSOUND    ///// (SA) DOOMSOUND
-		return S_RegisterSound( VMA( 1 ) );
-#else
-		return S_RegisterSound( VMA( 1 ), args[2] );
-#endif  ///// (SA) DOOMSOUND
+		return S_RegisterSound( VMA(1), args[2] );
 
 	case UI_S_STARTLOCALSOUND:
 		S_StartLocalSound( args[1], args[2], args[3] );
 		return 0;
 
 	case UI_S_FADESTREAMINGSOUND:
-		S_FadeStreamingSound( VMF( 1 ), args[2], args[3] );
+		S_FadeStreamingSound( VMF(1), args[2], args[3] );
 		return 0;
 
 	case UI_S_FADEALLSOUNDS:
-		S_FadeAllSounds( VMF( 1 ), args[2], args[3] );
+		S_FadeAllSounds( VMF(1), args[2], args[3] );
 		return 0;
 
 	case UI_KEY_KEYNUMTOSTRINGBUF:
-		Key_KeynumToStringBuf( args[1], VMA( 2 ), args[3] );
+		Key_KeynumToStringBuf( args[1], VMA(2), args[3] );
 		return 0;
 
 	case UI_KEY_GETBINDINGBUF:
-		Key_GetBindingBuf( args[1], VMA( 2 ), args[3] );
+		Key_GetBindingBuf( args[1], VMA(2), args[3] );
 		return 0;
 
 	case UI_KEY_SETBINDING:
-		Key_SetBinding( args[1], VMA( 2 ) );
+		Key_SetBinding( args[1], VMA(2) );
 		return 0;
 
 	case UI_KEY_BINDINGTOKEYS:
-		Key_GetBindingByString( VMA( 1 ), VMA( 2 ), VMA( 3 ) );
+		Key_GetBindingByString( VMA(1), VMA(2), VMA(3) );
 		return 0;
 
 
@@ -1081,8 +1049,8 @@ static intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return Key_GetCatcher();
 
 	case UI_KEY_SETCATCHER:
-    	// Don't allow the ui module to close the console
-    	Key_SetCatcher( args[1] | ( Key_GetCatcher( ) & KEYCATCH_CONSOLE ) );
+		// Don't allow the ui module to close the console
+		Key_SetCatcher( args[1] | ( Key_GetCatcher( ) & KEYCATCH_CONSOLE ) );
 		return 0;
 
 	case UI_GETCLIPBOARDDATA:
@@ -1090,15 +1058,15 @@ static intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return 0;
 
 	case UI_GETCLIENTSTATE:
-		GetClientState( VMA( 1 ) );
+		GetClientState( VMA(1) );
 		return 0;
 
 	case UI_GETGLCONFIG:
-		CL_GetGlconfig( VMA( 1 ) );
+		CL_GetGlconfig( VMA(1) );
 		return 0;
 
 	case UI_GETCONFIGSTRING:
-		return GetConfigString( args[1], VMA( 2 ), args[3] );
+		return GetConfigString( args[1], VMA(2), args[3] );
 
 	case UI_LAN_LOADCACHEDSERVERS:
 		LAN_LoadCachedServers();
@@ -1109,10 +1077,10 @@ static intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return 0;
 
 	case UI_LAN_ADDSERVER:
-		return LAN_AddServer( args[1], VMA( 2 ), VMA( 3 ) );
+		return LAN_AddServer( args[1], VMA(2), VMA(3) );
 
 	case UI_LAN_REMOVESERVER:
-		LAN_RemoveServer( args[1], VMA( 2 ) );
+		LAN_RemoveServer( args[1], VMA(2) );
 		return 0;
 
 	case UI_LAN_GETPINGQUEUECOUNT:
@@ -1123,22 +1091,22 @@ static intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return 0;
 
 	case UI_LAN_GETPING:
-		LAN_GetPing( args[1], VMA( 2 ), args[3], VMA( 4 ) );
+		LAN_GetPing( args[1], VMA(2), args[3], VMA(4) );
 		return 0;
 
 	case UI_LAN_GETPINGINFO:
-		LAN_GetPingInfo( args[1], VMA( 2 ), args[3] );
+		LAN_GetPingInfo( args[1], VMA(2), args[3] );
 		return 0;
 
 	case UI_LAN_GETSERVERCOUNT:
 		return LAN_GetServerCount( args[1] );
 
 	case UI_LAN_GETSERVERADDRESSSTRING:
-		LAN_GetServerAddressString( args[1], args[2], VMA( 3 ), args[4] );
+		LAN_GetServerAddressString( args[1], args[2], VMA(3), args[4] );
 		return 0;
 
 	case UI_LAN_GETSERVERINFO:
-		LAN_GetServerInfo( args[1], args[2], VMA( 3 ), args[4] );
+		LAN_GetServerInfo( args[1], args[2], VMA(3), args[4] );
 		return 0;
 
 	case UI_LAN_GETSERVERPING:
@@ -1159,7 +1127,7 @@ static intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return 0;
 
 	case UI_LAN_SERVERSTATUS:
-		return LAN_GetServerStatus( VMA( 1 ), VMA( 2 ), args[3] );
+		return LAN_GetServerStatus( VMA(1), VMA(2), args[3] );
 
 	case UI_LAN_SERVERISINFAVORITELIST:
 		return LAN_ServerIsInFavoriteList( args[1], args[2] );
@@ -1177,14 +1145,14 @@ static intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return Hunk_MemoryRemaining();
 
 	case UI_GET_CDKEY:
-		CLUI_GetCDKey( VMA( 1 ), args[2] );
+		CLUI_GetCDKey( VMA(1), args[2] );
 		return 0;
 
 	case UI_SET_CDKEY:
 		return 0;
 
 	case UI_R_REGISTERFONT:
-		re.RegisterFont( VMA( 1 ), args[2], VMA( 3 ) );
+		re.RegisterFont( VMA(1), args[2], VMA(3) );
 		return 0;
 
 	case UI_MEMSET:
@@ -1200,36 +1168,36 @@ static intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return args[1];
 
 	case UI_SIN:
-		return FloatAsInt( sin( VMF( 1 ) ) );
+		return FloatAsInt( sin( VMF(1) ) );
 
 	case UI_COS:
-		return FloatAsInt( cos( VMF( 1 ) ) );
+		return FloatAsInt( cos( VMF(1) ) );
 
 	case UI_ATAN2:
-		return FloatAsInt( atan2( VMF( 1 ), VMF( 2 ) ) );
+		return FloatAsInt( atan2( VMF(1), VMF(2) ) );
 
 	case UI_SQRT:
-		return FloatAsInt( sqrt( VMF( 1 ) ) );
+		return FloatAsInt( sqrt( VMF(1) ) );
 
 	case UI_FLOOR:
-		return FloatAsInt( floor( VMF( 1 ) ) );
+		return FloatAsInt( floor( VMF(1) ) );
 
 	case UI_CEIL:
-		return FloatAsInt( ceil( VMF( 1 ) ) );
+		return FloatAsInt( ceil( VMF(1) ) );
 
 	case UI_PC_ADD_GLOBAL_DEFINE:
-		return botlib_export->PC_AddGlobalDefine( VMA( 1 ) );
+		return botlib_export->PC_AddGlobalDefine( VMA(1) );
 	case UI_PC_REMOVE_ALL_GLOBAL_DEFINES:
 		botlib_export->PC_RemoveAllGlobalDefines();
 		return 0;
 	case UI_PC_LOAD_SOURCE:
-		return botlib_export->PC_LoadSourceHandle( VMA( 1 ) );
+		return botlib_export->PC_LoadSourceHandle( VMA(1) );
 	case UI_PC_FREE_SOURCE:
 		return botlib_export->PC_FreeSourceHandle( args[1] );
 	case UI_PC_READ_TOKEN:
-		return botlib_export->PC_ReadTokenHandle( args[1], VMA( 2 ) );
+		return botlib_export->PC_ReadTokenHandle( args[1], VMA(2) );
 	case UI_PC_SOURCE_FILE_AND_LINE:
-		return botlib_export->PC_SourceFileAndLine( args[1], VMA( 2 ), VMA( 3 ) );
+		return botlib_export->PC_SourceFileAndLine( args[1], VMA(2), VMA(3) );
 	case UI_PC_UNREAD_TOKEN:
 		botlib_export->PC_UnreadLastTokenHandle( args[1] );
 		return 0;
@@ -1238,15 +1206,15 @@ static intptr_t CL_UISystemCalls( intptr_t *args ) {
 		S_StopBackgroundTrack();
 		return 0;
 	case UI_S_STARTBACKGROUNDTRACK:
-		S_StartBackgroundTrack( VMA( 1 ), VMA( 2 ), args[3] );   //----(SA)	added fadeup time
+		S_StartBackgroundTrack( VMA(1), VMA(2), args[3] );   //----(SA)	added fadeup time
 		return 0;
 
 	case UI_REAL_TIME:
-		return Com_RealTime( VMA( 1 ) );
+		return Com_RealTime( VMA(1) );
 
 	case UI_CIN_PLAYCINEMATIC:
 		Com_DPrintf( "UI_CIN_PlayCinematic\n" );
-		return CIN_PlayCinematic( VMA( 1 ), args[2], args[3], args[4], args[5], args[6] );
+		return CIN_PlayCinematic( VMA(1), args[2], args[3], args[4], args[5], args[6] );
 
 	case UI_CIN_STOPCINEMATIC:
 		return CIN_StopCinematic( args[1] );
@@ -1263,7 +1231,7 @@ static intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return 0;
 
 	case UI_R_REMAP_SHADER:
-		re.RemapShader( VMA( 1 ), VMA( 2 ), VMA( 3 ) );
+		re.RemapShader( VMA(1), VMA(2), VMA(3) );
 		return 0;
 
 	case UI_VERIFY_CDKEY:
@@ -1272,10 +1240,10 @@ static intptr_t CL_UISystemCalls( intptr_t *args ) {
 		// NERVE - SMF
 	case UI_CL_GETLIMBOSTRING:
 		return qtrue;
-		//return CL_GetLimboString( args[1], VMA( 2 ) );
+		//return CL_GetLimboString( args[1], VMA(2) );
 
 	case UI_CL_TRANSLATE_STRING:
-		CL_TranslateString( VMA( 1 ), VMA( 2 ) );
+		CL_TranslateString( VMA(1), VMA(2) );
 		return 0;
 		// -NERVE - SMF
 
@@ -1288,11 +1256,11 @@ static intptr_t CL_UISystemCalls( intptr_t *args ) {
 		// DHM - Nerve
 
 	case UI_OPENURL:
-		CL_OpenURL( (const char *)VMA( 1 ) );
+		CL_OpenURL( (const char *)VMA(1) );
 		return 0;
 
 	case UI_GETHUNKDATA:
-		Com_GetHunkInfo( VMA( 1 ), VMA( 2 ) );
+		Com_GetHunkInfo( VMA(1), VMA(2) );
 		return 0;
 
 	// engine extensions
@@ -1303,6 +1271,11 @@ static intptr_t CL_UISystemCalls( intptr_t *args ) {
 	// engine extensions
 	case UI_R_ADDLINEARLIGHTTOSCENE:
 		re.AddLinearLightToScene( VMA(1), VMA(2), VMF(3), VMF(4), VMF(5), VMF(6) );
+		return 0;
+
+	// engine extensions
+	case UI_REMOVECOMMAND:
+		Cmd_RemoveCommandSafe( VMA(1) );
 		return 0;
 
 	case UI_TRAP_GETVALUE:
@@ -1371,7 +1344,7 @@ void CL_InitUI( void ) {
 	uivm = VM_Create( VM_UI, CL_UISystemCalls, UI_DllSyscall, VMI_NATIVE );
 	if ( !uivm ) {
 		if ( cl_connectedToPureServer && CL_GameSwitch() ) {
-			// server-side modificaton may require and reference only single custom ui.qvm
+			// server-side modification may require and reference only single custom ui.qvm
 			// so allow referencing everything until we download all files
 			// new gamestate will be requested after downloads complete
 			// which will correct filesystem permissions

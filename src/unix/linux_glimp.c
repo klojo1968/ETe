@@ -118,7 +118,6 @@ static Atom motifWMHints = None;
 static int window_width = 0;
 static int window_height = 0;
 static qboolean window_created;
-static qboolean window_focused;
 static qboolean window_exposed;
 
 #define KEY_MASK (KeyPressMask | KeyReleaseMask)
@@ -356,6 +355,7 @@ static char *XLateKey( XKeyEvent *ev, int *key )
   case XK_Num_Lock: *key = K_KP_NUMLOCK; break;
   case XK_Caps_Lock: *key = K_CAPSLOCK; break;
   case XK_Scroll_Lock: *key = K_SCROLLOCK; break;
+  case XK_KP_Equal: *key = K_KP_EQUALS; break;
   case XK_backslash: *key = '\\'; break;
 
   default:
@@ -851,6 +851,9 @@ void HandleEvents( void )
 
 		case ButtonPress:
 		case ButtonRelease:
+			if ( !IN_MouseActive() )
+				break;
+
 			if ( event.type == ButtonPress )
 				btn_press = qtrue;
 			else
@@ -874,9 +877,6 @@ void HandleEvents( void )
 					btn_code = event.xbutton.button - 8 + K_AUX1;
 					break;
 			}
-
-			if ( !IN_MouseActive() )
-				break;
 
 			if ( btn_code != -1 )
 			{
@@ -925,10 +925,10 @@ void HandleEvents( void )
 		case FocusIn:
 		case FocusOut:
 			if ( event.type == FocusIn ) {
-				window_focused = qtrue;
+				gw_active = qtrue;
 				Com_DPrintf( "FocusIn\n" );
 			} else {
-				window_focused = qfalse;
+				gw_active = qfalse;
 				Com_DPrintf( "FocusOut\n" );
 			}
 			Key_ClearStates();
@@ -1494,6 +1494,7 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 	unsigned long mask;
 	int colorbits, depthbits, stencilbits;
 	int actualWidth, actualHeight, actualRate;
+	char windowTitle[sizeof(cl_title)+(sizeof(ARCH_STRING)-1)+6] = { 0 };
 
 	window_width = 0;
 	window_height = 0;
@@ -1573,17 +1574,27 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 			Com_Printf( "XFree86-VidModeExtension: Ignored on non-fullscreen\n" );
 	}
 
-	if ( r_colorbits->integer == 0 )
+	colorbits = r_colorbits->integer;
+
+	if ( colorbits == 0 || colorbits > 24 )
 		colorbits = 24;
-	else
-		colorbits = MIN( r_colorbits->integer, 24);
 
 	if ( cl_depthbits->integer == 0 )
-		depthbits = 24;
+	{
+		// implicitly assume Z-buffer depth == desktop color depth
+		if ( colorbits > 16 )
+			depthbits = 24;
+		else
+			depthbits = 16;
+	}
 	else
-		depthbits = MIN( cl_depthbits->integer, 32);
+		depthbits = cl_depthbits->integer;
 
 	stencilbits = cl_stencilbits->integer;
+
+	// do not allow stencil if Z-buffer depth likely won't contain it
+	if ( depthbits < 24 )
+		stencilbits = 0;
 
 #ifdef USE_VULKAN_API
 	if ( vulkan )
@@ -1625,7 +1636,9 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 
 	window_exposed = qfalse;
 	window_created = qfalse;
-	window_focused = qfalse;
+
+	gw_active = qfalse;
+	gw_minimized = qfalse; /* safe default */
 
 	win = XCreateWindow( dpy, root, 0, 0, actualWidth, actualHeight,
 		0, visinfo->depth, InputOutput, visinfo->visual, mask, &attr );
@@ -1645,7 +1658,9 @@ int GLW_SetMode( int mode, const char *modeFS, qboolean fullscreen, qboolean vul
 			sizeof(decohint) / sizeof(long) );
 	}
 
-	XStoreName( dpy, win, CLIENT_WINDOW_TITLE " ( " ARCH_STRING " )" );
+	Com_sprintf( windowTitle, sizeof(windowTitle), "%s ( %s )", cl_title, ARCH_STRING );
+
+	XStoreName( dpy, win, windowTitle );
 
 	/* GH: Don't let the window be resized */
 	sizehints.flags = PMinSize | PMaxSize;
@@ -1882,13 +1897,9 @@ void GLimp_Init( glconfig_t *config )
 		return;
 	}
 
-	IN_Init();
-
 	// This values force the UI to disable driver selection
 	config->driverType = GLDRV_ICD;
 	config->hardwareType = GLHW_GENERIC;
-
-	//InitSig(); // not clear why this is at begin & end of function
 
 	// optional
 #define GLE( ret, name, ... ) q##name = GL_GetProcAddress( XSTRING( name ) );
@@ -1904,6 +1915,10 @@ void GLimp_Init( glconfig_t *config )
 	{
 		Com_Printf( "...GLX_EXT_swap_control not found\n" );
 	}
+
+	Key_ClearStates();
+
+	IN_Init();
 }
 
 
@@ -1978,13 +1993,13 @@ void VKimp_Init( glconfig_t *config )
 		return;
 	}
 
-	IN_Init();
-
 	// This values force the UI to disable driver selection
 	config->driverType = GLDRV_ICD;
 	config->hardwareType = GLHW_GENERIC;
 
-	//InitSig(); // not clear why this is at begin & end of function
+	Key_ClearStates();
+
+	IN_Init();
 }
 #endif // USE_VULKAN_API
 
@@ -2034,14 +2049,6 @@ void IN_Init( void )
 	// mouse variables
 	in_mouse = Cvar_Get( "in_mouse", "1", CVAR_ARCHIVE );
 
-#ifdef USE_JOYSTICK
-	// bk001130 - from cvs.17 (mkv), joystick variables
-	in_joystick = Cvar_Get( "in_joystick", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
-	// bk001130 - changed this to match win32
-	in_joystickDebug = Cvar_Get( "in_debugjoystick", "0", CVAR_TEMP );
-	joy_threshold = Cvar_Get( "joy_threshold", "0.15", CVAR_ARCHIVE_ND ); // FIXME: in_joythreshold
-#endif
-
 	if ( in_mouse->integer )
 	{
 		mouse_avail = qtrue;
@@ -2052,6 +2059,12 @@ void IN_Init( void )
 	}
 
 #ifdef USE_JOYSTICK
+	// bk001130 - from cvs.17 (mkv), joystick variables
+	in_joystick = Cvar_Get( "in_joystick", "0", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	// bk001130 - changed this to match win32
+	in_joystickDebug = Cvar_Get( "in_debugjoystick", "0", CVAR_TEMP );
+	joy_threshold = Cvar_Get( "joy_threshold", "0.15", CVAR_ARCHIVE_ND ); // FIXME: in_joythreshold
+
 	IN_StartupJoystick(); // bk001130 - from cvs1.17 (mkv)
 #endif
 
@@ -2091,18 +2104,16 @@ void IN_Frame( void )
 	IN_JoyMove();
 #endif
 
-	if ( Key_GetCatcher() & KEYCATCH_CONSOLE )
-	{
+	if ( Key_GetCatcher() & KEYCATCH_CONSOLE ) {
 		// temporarily deactivate if not in the game and
 		// running on the desktop with multimonitor configuration
-		if ( !glw_state.cdsFullscreen || glw_state.monitorCount > 1 )
-		{
+		if ( !glw_state.cdsFullscreen || glw_state.monitorCount > 1 ) {
 			IN_DeactivateMouse();
 			return;
 		}
 	}
 
-	if ( !window_focused || gw_minimized || in_nograb->integer ) {
+	if ( !gw_active || gw_minimized || in_nograb->integer ) {
 		IN_DeactivateMouse();
 		return;
 	}

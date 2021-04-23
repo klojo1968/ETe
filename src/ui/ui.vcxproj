@@ -42,6 +42,9 @@
   <PropertyGroup>
     <_ProjectFileVersion>15.0.26419.1</_ProjectFileVersion>
   </PropertyGroup>
+  <PropertyGroup>
+    <XPDeprecationWarning>false</XPDeprecationWarning>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>.\Release\</OutDir>
     <IntDir>.\Release\</IntDir>
@@ -62,7 +65,7 @@
     </Midl>
     <ClCompile>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;UI_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;UIDLL;UI_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
@@ -108,7 +111,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;UI_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;UIDLL;UI_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader />
@@ -149,13 +152,9 @@
   <ItemGroup>
     <ClCompile Include="..\game\bg_campaign.c" />
     <ClCompile Include="..\game\bg_classes.c" />
-    <ClCompile Include="..\game\bg_lib.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\game\bg_misc.c" />
-    <ClCompile Include="..\game\q_math.c" />
-    <ClCompile Include="..\game\q_shared.c" />
+    <ClCompile Include="..\qcommon\q_math.c" />
+    <ClCompile Include="..\qcommon\q_shared.c" />
     <ClCompile Include="ui_atoms.c" />
     <ClCompile Include="ui_gameinfo.c" />
     <ClCompile Include="ui_loadpanel.c" />
@@ -163,7 +162,6 @@
     <ClCompile Include="ui_players.c" />
     <ClCompile Include="ui_shared.c" />
     <ClCompile Include="ui_syscalls.c" />
-    <ClCompile Include="ui_util.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\etmain\ui\credits_activision.menu" />
@@ -230,10 +228,10 @@
     <ClInclude Include="..\..\etmain\ui\menudef.h" />
     <ClInclude Include="..\..\etmain\ui\menumacros.h" />
     <ClInclude Include="..\..\main\ui\menudef.h" />
-    <ClInclude Include="..\cgame\tr_types.h" />
+    <ClInclude Include="..\renderercommon\tr_types.h" />
     <ClInclude Include="..\game\bg_classes.h" />
     <ClInclude Include="..\game\bg_public.h" />
-    <ClInclude Include="..\game\q_shared.h" />
+    <ClInclude Include="..\qcommon\q_shared.h" />
     <ClInclude Include="..\game\surfaceflags.h" />
     <ClInclude Include="keycodes.h" />
     <ClInclude Include="ui_local.h" />

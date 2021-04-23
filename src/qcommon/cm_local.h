@@ -184,6 +184,7 @@ typedef struct {
 
 	int floodvalid;
 	int checkcount;                         // incremented on each trace
+	unsigned int checksum;
 } clipMap_t;
 
 

@@ -210,7 +210,6 @@ void G_SetClientSound( gentity_t *ent ) {
 PushBot
 ==============
 */
-void BotVoiceChatAfterIdleTime( int client, const char *id, int mode, int delay, qboolean voiceonly, int idleTime, qboolean forceIfDead );
 
 void PushBot( gentity_t *ent, gentity_t *other ) {
 	vec3_t dir, ang, f, r;
@@ -234,11 +233,6 @@ void PushBot( gentity_t *ent, gentity_t *other ) {
 	if ( VectorLengthSquared( other->client->ps.velocity ) > SQR( oldspeed ) ) {
 		VectorNormalize( other->client->ps.velocity );
 		VectorScale( other->client->ps.velocity, oldspeed, other->client->ps.velocity );
-	}
-	//
-	// also, if "ent" is a bot, tell "other" to move!
-	if ( rand() % 50 == 0 && ( ent->r.svFlags & SVF_BOT ) && oldspeed < 10 ) {
-		BotVoiceChatAfterIdleTime( ent->s.number, "Move", SAY_TEAM, 1000, qfalse, 20000, qfalse );
 	}
 }
 
@@ -305,23 +299,6 @@ qboolean ReadyToConstruct( gentity_t *ent, gentity_t *constructible, qboolean up
 	return qtrue;
 }
 
-void BotSetBlockEnt( int client, int blocker );
-/*
-==============
-CheckBotImpacts
-==============
-*/
-void CheckBotImpacts( gentity_t *ent, gentity_t *other ) {
-	char *blockEnts[] = {"func_explosive", NULL};
-	int j;
-
-	for ( j = 0; blockEnts[j]; j++ ) {
-		if ( other->classname && !Q_stricmp( other->classname, blockEnts[j] ) ) {
-			BotSetBlockEnt( ent->s.number, other->s.number );
-		}
-	}
-}
-
 //==============================================================
 
 /*
@@ -366,10 +343,6 @@ void ClientImpacts( gentity_t *ent, pmove_t *pm ) {
 		// if we are standing on their head, then we should be pushed also
 		if ( ( ent->r.svFlags & SVF_BOT ) && ent->s.groundEntityNum == other->s.number && other->client ) {
 			PushBot( other, ent );
-		}
-
-		if ( ent->r.svFlags & SVF_BOT ) {
-			CheckBotImpacts( ent, other );
 		}
 
 		if ( !other->touch ) {
@@ -562,13 +535,7 @@ void SpectatorThink( gentity_t *ent, usercmd_t *ucmd ) {
 		if ( ( client->buttons & BUTTON_ATTACK ) && !( client->oldbuttons & BUTTON_ATTACK ) ) {
 			Cmd_FollowCycle_f( ent, 1 );
 		}
-		// activate button swaps places with bot
-		else if ( client->sess.sessionTeam != TEAM_SPECTATOR &&
-				  ( ( client->buttons & BUTTON_ACTIVATE ) && !( client->oldbuttons & BUTTON_ACTIVATE ) ) &&
-				  ( g_entities[ent->client->sess.spectatorClient].client ) &&
-				  ( g_entities[ent->client->sess.spectatorClient].r.svFlags & SVF_BOT ) ) {
-			Cmd_SwapPlacesWithBot_f( ent, ent->client->sess.spectatorClient );
-		} else if (
+		else if (
 			( client->sess.sessionTeam == TEAM_SPECTATOR ) && // don't let dead team players do free fly
 			( client->sess.spectatorState == SPECTATOR_FOLLOW ) &&
 			( ( ( client->buttons & BUTTON_ACTIVATE ) &&
@@ -703,7 +670,6 @@ void ClientEvents( gentity_t *ent, int oldEventSequence ) {
 	int event;
 	gclient_t   *client;
 	int damage;
-	vec3_t dir;
 
 	client = ent->client;
 
@@ -750,7 +716,6 @@ void ClientEvents( gentity_t *ent, int oldEventSequence ) {
 			} else {
 				damage = 5; // never used
 			}
-			VectorSet( dir, 0, 0, 1 );
 			ent->pain_debounce_time = level.time + 200; // no normal pain sound
 			G_Damage( ent, NULL, NULL, NULL, NULL, damage, 0, MOD_FALLING );
 			break;
@@ -928,7 +893,7 @@ once for each server frame, which makes for smooth demo recording.
 ==============
 */
 void ClientThink_real( gentity_t *ent ) {
-	int msec, oldEventSequence, monsterslick = 0;
+	int msec, oldEventSequence;
 	pmove_t pm;
 	usercmd_t   *ucmd;
 	gclient_t   *client = ent->client;
@@ -1174,7 +1139,7 @@ void ClientThink_real( gentity_t *ent ) {
 		pm.cmd.weapon = client->ps.weapon;
 	}
 
-	monsterslick = Pmove( &pm );
+	(void)Pmove( &pm );
 
 	// Gordon: thx to bani for this
 	// ikkyo - fix leaning players bug
@@ -1346,14 +1311,6 @@ void ClientThink( int clientNum ) {
 	{
 		ClientThink_real( ent );
 	}
-
-	// if this is the locally playing client, do bot thinks
-#ifndef NO_BOT_SUPPORT
-	if ( bot_enable.integer && !g_dedicated.integer && clientNum == 0 ) {
-		BotAIThinkFrame( ent->client->pers.cmd.serverTime );
-		level.lastClientBotThink = level.time;
-	}
-#endif // NO_BOT_SUPPORT
 }
 
 

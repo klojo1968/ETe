@@ -26,9 +26,6 @@
     <ClCompile Include="..\game\bg_classes.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\game\bg_lib.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\game\bg_misc.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -164,10 +161,10 @@
     <ClCompile Include="cg_window.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\game\q_math.c">
+    <ClCompile Include="..\qcommon\q_math.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\game\q_shared.c">
+    <ClCompile Include="..\qcommon\q_shared.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\ui\ui_shared.c">
@@ -196,13 +193,13 @@
     <ClInclude Include="..\..\main\ui\menudef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\game\q_shared.h">
+    <ClInclude Include="..\qcommon\q_shared.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\game\surfaceflags.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="tr_types.h">
+    <ClInclude Include="..\renderercommon\tr_types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\ui\ui_shared.h">

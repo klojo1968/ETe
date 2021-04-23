@@ -3254,7 +3254,7 @@ static void PM_Weapon( void ) {
 
 	// check for dead player
 	if ( pm->ps->stats[STAT_HEALTH] <= 0 ) {
-		if ( !pm->ps->pm_flags & PMF_LIMBO ) {
+		if ( !(pm->ps->pm_flags & PMF_LIMBO) ) {
 			PM_CoolWeapons();
 		}
 
@@ -3843,6 +3843,12 @@ static void PM_Weapon( void ) {
 	// player is underwater - no fire
 	if ( pm->waterlevel == 3 ) {
 		if ( pm->ps->weapon != WP_KNIFE &&
+			 pm->ps->weapon != WP_MEDIC_SYRINGE &&
+			 pm->ps->weapon != WP_AMMO &&
+			 pm->ps->weapon != WP_MEDKIT &&
+			 pm->ps->weapon != WP_BINOCULARS &&
+			 pm->ps->weapon != WP_PLIERS &&
+			 pm->ps->weapon != WP_MEDIC_ADRENALINE &&
 			 pm->ps->weapon != WP_GRENADE_LAUNCHER &&
 			 pm->ps->weapon != WP_GRENADE_PINEAPPLE &&
 			 pm->ps->weapon != WP_DYNAMITE &&

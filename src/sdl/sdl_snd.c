@@ -191,9 +191,9 @@ static void SND_DeviceList(void)
 }
 
 
-static int SNDDMA_KHzToHz(int khz)
+static int SNDDMA_KHzToHz( int khz )
 {
-	switch (khz)
+	switch ( khz )
 	{
 		default:
 		case 48: return 48000;

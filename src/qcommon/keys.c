@@ -79,7 +79,7 @@ static const keyname_t keynames[] =
 	{"+", K_PLUS},
 	{",", K_COMMA},
 	{"-", K_MINUS},
-	{".", K_DOT}, 
+	{".", K_DOT},
 	{"/", K_SLASH},
 	{"SEMICOLON", K_SEMICOLON},	// because a raw semicolon separates commands
 	{"=", K_EQUAL},
@@ -101,7 +101,7 @@ static const keyname_t keynames[] =
 	{"COMMAND", K_COMMAND},
 
 	{"CAPSLOCK", K_CAPSLOCK},
-	
+
 	{"F1", K_F1},
 	{"F2", K_F2},
 	{"F3", K_F3},
@@ -249,7 +249,7 @@ static const keyname_t keynames[] =
 };
 
 #ifndef DEDICATED
-#ifndef __MACOS__
+#if !defined(__APPLE__) && !defined(__APPLE_CC__)
 static const keyname_t keynames_d[] =    //deutsch
 {
 	{"TAB", K_TAB},
@@ -916,7 +916,7 @@ static const keyname_t keynames_i[] =  //Italian
 Key_SetOverstrikeMode
 ===================
 */
-qboolean Key_GetOverstrikeMode( void ) 
+qboolean Key_GetOverstrikeMode( void )
 {
 	return key_overstrikeMode;
 }
@@ -927,7 +927,7 @@ qboolean Key_GetOverstrikeMode( void )
 Key_SetOverstrikeMode
 ===================
 */
-void Key_SetOverstrikeMode( qboolean state ) 
+void Key_SetOverstrikeMode( qboolean state )
 {
 	key_overstrikeMode = state;
 }
@@ -938,9 +938,9 @@ void Key_SetOverstrikeMode( qboolean state )
 Key_IsDown
 ===================
 */
-qboolean Key_IsDown( int keynum ) 
+qboolean Key_IsDown( int keynum )
 {
-	if ( keynum < 0 || keynum >= MAX_KEYS ) 
+	if ( keynum < 0 || keynum >= MAX_KEYS )
 	{
 		return qfalse;
 	}
@@ -957,14 +957,14 @@ Returns a key number to be used to index keys[] by looking at
 the given string.  Single ascii characters return themselves, while
 the K_* names are matched up.
 
-0x11 will be interpreted as raw hex, which will allow new controlers
+0x11 will be interpreted as raw hex, which will allow new controllers
 
 to be configured even if they don't have defined names.
 ===================
 */
 int Key_StringToKeynum( const char *str ) {
 	const keyname_t	*kn;
-	
+
 	if ( !str || str[0] == '\0' ) {
 		return -1;
 	}
@@ -975,7 +975,7 @@ int Key_StringToKeynum( const char *str ) {
 	// check for hex code
 	if ( strlen( str ) == 4 ) {
 		int n = Com_HexStrToInt( str );
-		
+
 		if ( n >= 0 ) {
 			return n;
 		}
@@ -1026,7 +1026,7 @@ const char *Key_KeynumToString( int keynum, qboolean bTranslate ) {
 
 	kn = keynames;    //init to english
 #ifndef DEDICATED
-#ifndef __MACOS__   //DAJ USA
+#if !defined(__APPLE__) && !defined(__APPLE_CC__)  //DAJ USA
 	if ( bTranslate ) {
 		if ( cl_language->integer - 1 == LANGUAGE_FRENCH ) {
 			kn = keynames_f;  //use french
@@ -1061,6 +1061,21 @@ const char *Key_KeynumToString( int keynum, qboolean bTranslate ) {
 	return tinystr;
 }
 
+
+/*
+====================
+Key_KeynumToStringBuf
+
+Only used by cl_cgame and cl_ui for trap interface
+====================
+*/
+#ifndef DEDICATED
+void Key_KeynumToStringBuf( int keynum, char *buf, int buflen ) {
+	Q_strncpyz( buf, Key_KeynumToString( keynum, qtrue ), buflen );
+}
+#endif
+
+
 // ENSI CHECKME do we need the hash binds from ET?
 
 /*
@@ -1077,12 +1092,12 @@ void Key_SetBinding( int keynum, const char *binding ) {
 	if ( keys[ keynum ].binding ) {
 		Z_Free( keys[ keynum ].binding );
 	}
-		
+
 	// allocate memory for new binding
 	keys[ keynum ].binding = CopyString( binding );
 
 	// consider this like modifying an archived cvar, so the
-	// file write will be triggered at the next oportunity
+	// file write will be triggered at the next opportunity
 	cvar_modifiedFlags |= CVAR_ARCHIVE;
 }
 
@@ -1099,6 +1114,26 @@ const char *Key_GetBinding( int keynum ) {
 
 	return keys[ keynum ].binding;
 }
+
+
+/*
+====================
+Key_GetBindingBuf
+====================
+*/
+#ifndef DEDICATED
+void Key_GetBindingBuf( int keynum, char *buf, int buflen ) {
+	const char *value;
+
+	value = Key_GetBinding( keynum );
+	if ( value ) {
+		Q_strncpyz( buf, value, buflen );
+	}
+	else {
+		*buf = '\0';
+	}
+}
+#endif
 
 
 // binding MUST be lower case
@@ -1121,7 +1156,7 @@ void Key_GetBindingByString( const char* binding, int* key1, int* key2 ) {
 }
 
 
-/* 
+/*
 ===================
 Key_GetKey
 ===================
@@ -1154,7 +1189,7 @@ static void Key_Unbind_f( void )
 		Com_Printf( "unbind <key> : remove commands from a key\n" );
 		return;
 	}
-	
+
 	b = Key_StringToKeynum( Cmd_Argv( 1 ) );
 	if ( b == -1 )
 	{
@@ -1174,8 +1209,8 @@ Key_Unbindall_f
 static void Key_Unbindall_f( void )
 {
 	int		i;
-	
-	for ( i = 0 ; i < MAX_KEYS; i++ ) 
+
+	for ( i = 0 ; i < MAX_KEYS; i++ )
 	{
 		if ( keys[i].binding )
 		{
@@ -1193,7 +1228,7 @@ Key_Bind_f
 static void Key_Bind_f( void )
 {
 	int c, b;
-	
+
 	c = Cmd_Argc();
 
 	if ( c < 2 )
@@ -1217,7 +1252,7 @@ static void Key_Bind_f( void )
 			Com_Printf( "\"%s\" is not bound\n", Cmd_Argv( 1 ) );
 		return;
 	}
-	
+
 	// copy the rest of the command line
 	Key_SetBinding( b, Cmd_ArgsFrom( 2 ) );
 }
@@ -1406,7 +1441,7 @@ void Key_ParseBinding( int key, qboolean down, unsigned time, qboolean forceAll 
 Com_InitKeyCommands
 ===================
 */
-void Com_InitKeyCommands( void ) 
+void Com_InitKeyCommands( void )
 {
 	// register our functions
 	Cmd_AddCommand( "bind", Key_Bind_f );

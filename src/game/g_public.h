@@ -456,8 +456,10 @@ typedef enum {
 	G_MESSAGESTATUS,
 	// -zinx
 
+#ifndef GAMEDLL
 	// engine extensions
 	G_TRAP_GETVALUE = COM_TRAP_GETVALUE
+#endif
 
 } gameImport_t;
 

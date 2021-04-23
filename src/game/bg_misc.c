@@ -3541,7 +3541,8 @@ void BG_EvaluateTrajectory( const trajectory_t *tr, int atTime, vec3_t result, q
 		VectorMA( v, -phase * 0.5 * deltaTime * deltaTime, result, result );
 		break;
 	case TR_SPLINE:
-		if ( !( pSpline = BG_GetSplineData( splinePath, &backwards ) ) ) {
+		pSpline = BG_GetSplineData( splinePath, &backwards );
+		if ( !pSpline ) {
 			return;
 		}
 
@@ -3638,7 +3639,8 @@ void BG_EvaluateTrajectory( const trajectory_t *tr, int atTime, vec3_t result, q
 
 		break;
 	case TR_LINEAR_PATH:
-		if ( !( pSpline = BG_GetSplineData( splinePath, &backwards ) ) ) {
+		pSpline = BG_GetSplineData( splinePath, &backwards );
+		if ( !pSpline ) {
 			return;
 		}
 
@@ -3837,7 +3839,7 @@ void BG_GetMarkDir( const vec3_t dir, const vec3_t normal, vec3_t out ) {
 }
 
 
-char *eventnames[] = {
+const char *eventnames[] = {
 	"EV_NONE",
 	"EV_FOOTSTEP",
 	"EV_FOOTSTEP_METAL",
@@ -4444,7 +4446,7 @@ float BG_SplineLength( splinePath_t* pSpline ) {
 	float dist = 0;
 //	float tension;
 	vec3_t vec[2];
-	vec3_t lastPoint;
+	vec3_t lastPoint = { 0 };
 	vec3_t result;
 
 	for ( i = 0; i <= 1.f; i += granularity ) {
@@ -5303,40 +5305,90 @@ int BG_FootstepForSurface( int surfaceFlags ) {
 }
 
 /*
-============
-Q_vsnprintf
-
-vsnprintf portability:
-
-C99 standard: vsnprintf returns the number of characters (excluding the trailing
-'\0') which would have been written to the final string if enough space had been available
-snprintf and vsnprintf do not write more than size bytes (including the trailing '\0')
-
-win32: _vsnprintf returns the number of characters written, not including the terminating null character,
-or a negative value if an output error occurs. If the number of characters to write exceeds count,
-then count characters are written and -1 is returned and no trailing '\0' is added.
-
-Q_vsnPrintf: always append a trailing '\0', returns number of characters written or
-returns -1 on failure or if the buffer would be overflowed.
-
-copied over from common.c implementation
+===========
+BG_CleanName
 ============
 */
-int Q_vsnprintf( char *dest, size_t size, const char *fmt, va_list argptr ) {
-	int ret;
+void BG_CleanName( const char *in, char *out, int outSize, const char *blankString ) {
+	int		len, colorlessLen;
+	char	ch;
+	char	*p;
+	int		spaces;
 
-#ifdef _WIN32
-#undef _vsnprintf
-	ret = _vsnprintf( dest, size - 1, fmt, argptr );
-#define _vsnprintf  use_idStr_vsnPrintf
-#else
-#undef vsnprintf
-	ret = vsnprintf( dest, size, fmt, argptr );
-#define vsnprintf   use_idStr_vsnPrintf
-#endif
-	dest[size - 1] = '\0';
-	if ( ret < 0 || ret >= size ) {
-		return -1;
+	//save room for trailing null byte
+	outSize--;
+
+	len = 0;
+	colorlessLen = 0;
+	p = out;
+	*p = '\0';
+	spaces = 0;
+
+	while( 1 ) {
+		ch = *in++;
+		if( !ch ) {
+			break;
+		}
+
+		// don't allow leading spaces
+		if( *p == '\0' && ch <= ' ' ) {
+			continue;
+		}
+
+		// check colors
+		if( ch == Q_COLOR_ESCAPE ) {
+			// solo trailing carat is not a color prefix
+			if( !*in ) {
+				break;
+			}
+
+			// don't allow black in a name, period
+			if( ColorIndex(*in) == 0 ) {
+				in++;
+				continue;
+			}
+
+			// make sure room in dest for both chars
+			if( len > outSize - 2 ) {
+				break;
+			}
+
+			*out++ = ch;
+			*out++ = *in++;
+			len += 2;
+			continue;
+		}
+
+		// let's keep it in printable range
+		if ( ch < ' ' || ch > 126 ) {
+			continue;
+		}
+
+		// don't allow too many consecutive spaces
+		if( ch == ' ' ) {
+			spaces++;
+			if( spaces > 2 ) {
+				continue;
+			}
+		}
+		else {
+			spaces = 0;
+		}
+
+		if( len > outSize - 1 ) {
+			break;
+		}
+
+		*out++ = ch;
+		colorlessLen++;
+		len++;
 	}
-	return ret;
+	*out = '\0';
+
+	if ( blankString ) {
+		// don't allow empty names
+		if( *p == '\0' || colorlessLen == 0 ) {
+			Q_strncpyz( p, blankString, outSize );
+		}
+	}
 }

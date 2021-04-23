@@ -25,7 +25,6 @@ If you have questions concerning this license or the applicable additional terms
 
 ===========================================================================
 */
-
 // cl_parse.c  -- parse a message received from the server
 
 #include "client.h"
@@ -174,8 +173,7 @@ Parses deltas from the given base and adds the resulting entity
 to the current frame
 ==================
 */
-static void CL_DeltaEntity( msg_t *msg, clSnapshot_t *frame, int newnum, const entityState_t *old,
-					 qboolean unchanged) {
+static void CL_DeltaEntity( msg_t *msg, clSnapshot_t *frame, int newnum, const entityState_t *old, qboolean unchanged) {
 	entityState_t	*state;
 
 	// save the parsed entity state into the big circular buffer so
@@ -259,7 +257,7 @@ static void CL_ParsePacketEntities( msg_t *msg, const clSnapshot_t *oldframe, cl
 				Com_Printf ("%3i:  unchanged: %i\n", msg->readcount, oldnum);
 			}
 			CL_DeltaEntity( msg, newframe, oldnum, oldstate, qtrue );
-			
+
 			oldindex++;
 
 			if ( oldindex >= oldframe->numEntities ) {
@@ -307,7 +305,7 @@ static void CL_ParsePacketEntities( msg_t *msg, const clSnapshot_t *oldframe, cl
 			Com_Printf ("%3i:  unchanged: %i\n", msg->readcount, oldnum);
 		}
 		CL_DeltaEntity( msg, newframe, oldnum, oldstate, qtrue );
-		
+
 		oldindex++;
 
 		if ( oldindex >= oldframe->numEntities ) {
@@ -372,7 +370,7 @@ static void CL_ParseSnapshot( msg_t *msg ) {
 	// If the frame is delta compressed from data that we
 	// no longer have available, we must suck up the rest of
 	// the frame, but not use it, then ask for a non-compressed
-	// message 
+	// message
 	if ( newSnap.deltaNum <= 0 ) {
 		newSnap.valid = qtrue;		// uncompressed frame
 		old = NULL;
@@ -396,13 +394,13 @@ static void CL_ParseSnapshot( msg_t *msg ) {
 
 	// read areamask
 	newSnap.areabytes = MSG_ReadByte( msg );
-	
+
 	if ( newSnap.areabytes > sizeof(newSnap.areamask) )
 	{
 		Com_Error( ERR_DROP,"CL_ParseSnapshot: Invalid size %d for areamask", newSnap.areabytes );
 		return;
 	}
-	
+
 	MSG_ReadData( msg, &newSnap.areamask, newSnap.areabytes );
 
 	// read playerinfo
@@ -570,12 +568,12 @@ void CL_SystemInfoChanged( qboolean onlyGame ) {
 
 	// scan through all the variables in the systeminfo and locally set cvars to match
 	s = systemInfo;
-	while ( s ) {
+	do {
 		int cvar_flags;
 		const char *foundkey = NULL;
-		
-		Info_NextPair( &s, key, value );
-		if ( !key[0] ) {
+
+		s = Info_NextPair( s, key, value );
+		if ( key[0] == '\0' ) {
 			break;
 		}
 
@@ -584,31 +582,32 @@ void CL_SystemInfoChanged( qboolean onlyGame ) {
 		if ( foundkey ) {
 			continue;
 		}
-		
+
 		if ( !Q_stricmp( key, "fs_game" ) ) {
-			continue; // already procesed
+			continue; // already processed
 		}
 
-		if((cvar_flags = Cvar_Flags(key)) == CVAR_NONEXISTENT)
-			Cvar_Get(key, value, CVAR_SERVER_CREATED | CVAR_ROM);
+		if ( ( cvar_flags = Cvar_Flags( key ) ) == CVAR_NONEXISTENT )
+			Cvar_Get( key, value, CVAR_SERVER_CREATED | CVAR_ROM );
 		else
 		{
 			// If this cvar may not be modified by a server discard the value.
-			if(!(cvar_flags & (CVAR_SYSTEMINFO | CVAR_SERVER_CREATED | CVAR_USER_CREATED)))
+			if ( !(cvar_flags & ( CVAR_SYSTEMINFO | CVAR_SERVER_CREATED | CVAR_USER_CREATED ) ) )
 			{
 #ifndef STANDALONE
 				if(Q_stricmp(key, "g_synchronousClients") && Q_stricmp(key, "pmove_fixed") &&
-				   Q_stricmp(key, "pmove_msec"))
+				   Q_stricmp(key, "pmove_msec") && Q_stricmp(key, "shared"))
 #endif
 				{
-					Com_Printf(S_COLOR_YELLOW "WARNING: server is not allowed to set %s=%s\n", key, value);
+					Com_Printf( S_COLOR_YELLOW "WARNING: server is not allowed to set %s=%s\n", key, value );
 					continue;
 				}
 			}
 
-			Cvar_SetSafe(key, value);
+			Cvar_SetSafe( key, value );
 		}
 	}
+	while ( *s != '\0' );
 
 	// Arnout: big hack to clear the image cache on a pure change
 	if ( cl_connectedToPureServer ) {
@@ -807,7 +806,7 @@ static void CL_ParseGamestate( msg_t *msg ) {
 			len = strlen( s );
 
 			if ( len + 1 + cl.gameState.dataCount > MAX_GAMESTATE_CHARS ) {
-				Com_Error( ERR_DROP, "MAX_GAMESTATE_CHARS exceeded: %i", 
+				Com_Error( ERR_DROP, "MAX_GAMESTATE_CHARS exceeded: %i",
 					len + 1 + cl.gameState.dataCount );
 			}
 
@@ -851,7 +850,7 @@ static void CL_ParseGamestate( msg_t *msg ) {
 	}
 
 	gamedirModified = ( Cvar_Flags( "fs_game" ) & CVAR_MODIFIED ) ? qtrue : qfalse;
-	
+
 	if ( !cl_oldGameSet && gamedirModified ) {
 		cl_oldGameSet = qtrue;
 		Q_strncpyz( cl_oldGame, oldGame, sizeof( cl_oldGame ) );
@@ -887,7 +886,7 @@ checks for valid ZIP signature
 returns qtrue for normal and empty archives
 =====================
 */
-qboolean CL_ValidPakSignature( const byte *data, int len ) 
+qboolean CL_ValidPakSignature( const byte *data, int len )
 {
 	// maybe it is not 100% correct to check for file size here
 	// because we may receive more data in future packets
@@ -1012,7 +1011,7 @@ static void CL_ParseDownload( msg_t *msg ) {
 		Com_Error(ERR_DROP, "CL_ParseDownload: Invalid size %d for download chunk", size);
 		return;
 	}
-	
+
 	MSG_ReadData(msg, data, size);
 
 	if((clc.downloadBlock & 0xFFFF) != block)
@@ -1022,9 +1021,9 @@ static void CL_ParseDownload( msg_t *msg ) {
 	}
 
 	// open the file if not opened yet
-	if ( clc.download == FS_INVALID_HANDLE ) 
+	if ( clc.download == FS_INVALID_HANDLE )
 	{
-		if ( !CL_ValidPakSignature( data, size ) ) 
+		if ( !CL_ValidPakSignature( data, size ) )
 		{
 			Com_Printf( S_COLOR_YELLOW "Invalid pak signature for %s\n", clc.downloadName );
 			CL_AddReliableCommand( "stopdl", qfalse );
@@ -1034,7 +1033,7 @@ static void CL_ParseDownload( msg_t *msg ) {
 
 		clc.download = FS_SV_FOpenFileWrite( clc.downloadTempName );
 
-		if ( clc.download == FS_INVALID_HANDLE ) 
+		if ( clc.download == FS_INVALID_HANDLE )
 		{
 			Com_Printf( "Could not create %s\n", clc.downloadTempName );
 			CL_AddReliableCommand( "stopdl", qfalse );
@@ -1167,7 +1166,7 @@ void CL_ParseServerMessage( msg_t *msg ) {
 
 	// get the reliable sequence acknowledge number
 	clc.reliableAcknowledge = MSG_ReadLong( msg );
-	// 
+	//
 	if ( clc.reliableAcknowledge < clc.reliableSequence - MAX_RELIABLE_COMMANDS ) {
 		clc.reliableAcknowledge = clc.reliableSequence;
 	}
@@ -1199,7 +1198,7 @@ void CL_ParseServerMessage( msg_t *msg ) {
 		// other commands
 		switch ( cmd ) {
 		default:
-			Com_Error( ERR_DROP,"CL_ParseServerMessage: Illegible server message %d\n", cmd );
+			Com_Error( ERR_DROP, "CL_ParseServerMessage: Illegible server message %d", cmd );
 			break;
 		case svc_nop:
 			break;

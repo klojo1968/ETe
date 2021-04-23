@@ -72,32 +72,32 @@ typedef struct {
 ========================================================================
 */
 
-#define MD3_IDENT           ( ( '3' << 24 ) + ( 'P' << 16 ) + ( 'D' << 8 ) + 'I' )
-#define MD3_VERSION         15
+#define MD3_IDENT			(('3'<<24)+('P'<<16)+('D'<<8)+'I')
+#define MD3_VERSION			15
 
 // limits
-#define MD3_MAX_LODS        4
-#define MD3_MAX_TRIANGLES   8192    // per surface
-#define MD3_MAX_VERTS       4096    // per surface
-#define MD3_MAX_SHADERS     256     // per surface
-#define MD3_MAX_FRAMES      1024    // per model
-#define MD3_MAX_SURFACES    32      // per model
-#define MD3_MAX_TAGS        16      // per frame
+#define MD3_MAX_LODS		4
+#define	MD3_MAX_TRIANGLES	8192	// per surface
+#define MD3_MAX_VERTS		4096	// per surface
+#define MD3_MAX_SHADERS		256		// per surface
+#define MD3_MAX_FRAMES		1024	// per model
+#define	MD3_MAX_SURFACES	32		// per model
+#define MD3_MAX_TAGS		16		// per frame
 
 // vertex scales
-#define MD3_XYZ_SCALE       ( 1.0 / 64 )
+#define	MD3_XYZ_SCALE		(1.0/64)
 
 typedef struct md3Frame_s {
-	vec3_t bounds[2];
-	vec3_t localOrigin;
-	float radius;
-	char name[16];
+	vec3_t		bounds[2];
+	vec3_t		localOrigin;
+	float		radius;
+	char		name[16];
 } md3Frame_t;
 
 typedef struct md3Tag_s {
-	char name[MAX_QPATH];           // tag name
-	vec3_t origin;
-	vec3_t axis[3];
+	char		name[MAX_QPATH];	// tag name
+	vec3_t		origin;
+	vec3_t		axis[3];
 } md3Tag_t;
 
 /*
@@ -111,63 +111,63 @@ typedef struct md3Tag_s {
 ** XyzNormals		sizeof( md3XyzNormal_t ) * numVerts * numFrames
 */
 typedef struct {
-	int ident;                  //
+	int32_t ident;				//
 
-	char name[MAX_QPATH];       // polyset name
+	char	name[MAX_QPATH];	// polyset name
 
-	int flags;
-	int numFrames;              // all surfaces in a model should have the same
+	int32_t flags;
+	int32_t numFrames;			// all surfaces in a model should have the same
 
-	int numShaders;             // all surfaces in a model should have the same
-	int numVerts;
+	int32_t numShaders;			// all surfaces in a model should have the same
+	int32_t numVerts;
 
-	int numTriangles;
-	int ofsTriangles;
+	int32_t numTriangles;
+	uint32_t ofsTriangles;
 
-	int ofsShaders;             // offset from start of md3Surface_t
-	int ofsSt;                  // texture coords are common for all frames
-	int ofsXyzNormals;          // numVerts * numFrames
+	uint32_t ofsShaders;			// offset from start of md3Surface_t
+	uint32_t ofsSt;				// texture coords are common for all frames
+	uint32_t ofsXyzNormals;		// numVerts * numFrames
 
-	int ofsEnd;                 // next surface follows
+	uint32_t ofsEnd;				// next surface follows
 } md3Surface_t;
 
 typedef struct {
-	char name[MAX_QPATH];
-	int shaderIndex;                // for in-game use
+	char			name[MAX_QPATH];
+	int				shaderIndex;	// for in-game use
 } md3Shader_t;
 
 typedef struct {
-	int indexes[3];
+	int			indexes[3];
 } md3Triangle_t;
 
 typedef struct {
-	float st[2];
+	float		st[2];
 } md3St_t;
 
 typedef struct {
-	short xyz[3];
-	short normal;
+	short		xyz[3];
+	short		normal;
 } md3XyzNormal_t;
 
 typedef struct {
-	int ident;
-	int version;
+	int32_t		ident;
+	int32_t		version;
 
-	char name[MAX_QPATH];           // model name
+	char		name[MAX_QPATH];	// model name
 
-	int flags;
+	uint32_t	flags;
 
-	int numFrames;
-	int numTags;
-	int numSurfaces;
+	int32_t		numFrames;
+	int32_t		numTags;
+	int32_t		numSurfaces;
 
-	int numSkins;
+	int32_t		numSkins;
 
-	int ofsFrames;                  // offset for first frame
-	int ofsTags;                    // numFrames * numTags
-	int ofsSurfaces;                // first surface, others follow
+	uint32_t	ofsFrames;			// offset for first frame
+	uint32_t	ofsTags;			// numFrames * numTags
+	uint32_t	ofsSurfaces;		// first surface, others follow
 
-	int ofsEnd;                     // end of file
+	uint32_t	ofsEnd;				// end of file
 } md3Header_t;
 
 /*
@@ -213,8 +213,8 @@ MDC file format
 // 2 - changed tag structure so it only lists the names once
 
 typedef struct {
-	unsigned int ofsVec;                    // offset direction from the last base frame
-//	unsigned short	ofsVec;
+	uint32_t ofsVec;                    // offset direction from the last base frame
+//	uint16_t	ofsVec;
 } mdcXyzCompressed_t;
 
 typedef struct {
@@ -242,51 +242,51 @@ typedef struct {
 ** frameCompFrames	sizeof( short ) * numFrames (-1 if frame is a baseFrame)
 */
 typedef struct {
-	int ident;                  //
+	int32_t ident;                  //
 
 	char name[MAX_QPATH];       // polyset name
 
-	int flags;
-	int numCompFrames;          // all surfaces in a model should have the same
-	int numBaseFrames;          // ditto
+	int32_t flags;
+	int32_t numCompFrames;          // all surfaces in a model should have the same
+	int32_t numBaseFrames;          // ditto
 
-	int numShaders;             // all surfaces in a model should have the same
-	int numVerts;
+	int32_t numShaders;             // all surfaces in a model should have the same
+	int32_t numVerts;
 
-	int numTriangles;
-	int ofsTriangles;
+	int32_t numTriangles;
+	uint32_t ofsTriangles;
 
-	int ofsShaders;             // offset from start of md3Surface_t
-	int ofsSt;                  // texture coords are common for all frames
-	int ofsXyzNormals;          // numVerts * numBaseFrames
-	int ofsXyzCompressed;       // numVerts * numCompFrames
+	uint32_t ofsShaders;             // offset from start of md3Surface_t
+	uint32_t ofsSt;                  // texture coords are common for all frames
+	uint32_t ofsXyzNormals;          // numVerts * numBaseFrames
+	uint32_t ofsXyzCompressed;       // numVerts * numCompFrames
 
-	int ofsFrameBaseFrames;     // numFrames
-	int ofsFrameCompFrames;     // numFrames
+	uint32_t ofsFrameBaseFrames;     // numFrames
+	uint32_t ofsFrameCompFrames;     // numFrames
 
-	int ofsEnd;                 // next surface follows
+	uint32_t ofsEnd;                 // next surface follows
 } mdcSurface_t;
 
 typedef struct {
-	int ident;
-	int version;
+	int32_t ident;
+	int32_t version;
 
 	char name[MAX_QPATH];           // model name
 
-	int flags;
+	uint32_t flags;
 
-	int numFrames;
-	int numTags;
-	int numSurfaces;
+	int32_t numFrames;
+	int32_t numTags;
+	int32_t numSurfaces;
 
-	int numSkins;
+	int32_t numSkins;
 
-	int ofsFrames;                  // offset for first frame, stores the bounds and localOrigin
-	int ofsTagNames;                // numTags
-	int ofsTags;                    // numFrames * numTags
-	int ofsSurfaces;                // first surface, others follow
+	uint32_t ofsFrames;                  // offset for first frame, stores the bounds and localOrigin
+	uint32_t ofsTagNames;                // numTags
+	uint32_t ofsTags;                    // numFrames * numTags
+	uint32_t ofsSurfaces;                // first surface, others follow
 
-	int ofsEnd;                     // end of file
+	uint32_t ofsEnd;                     // end of file
 } mdcHeader_t;
 // done.
 
@@ -777,7 +777,8 @@ typedef struct {
 
 
 typedef struct {
-	int fileofs, filelen;
+	int32_t fileofs;
+	int32_t filelen;
 } lump_t;
 
 #define LUMP_ENTITIES       0

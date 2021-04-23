@@ -32,13 +32,6 @@ If you have questions concerning this license or the applicable additional terms
 
 
 #include "cg_local.h"
-/*
-#if __MACOS__
-#ifdef GAMERANGER
-#include "GameRanger SDK/GameRanger.h"
-#endif
-#endif
-*/
 
 // rain - minor optimization - we only want to reset ents that were valid
 // in the last frame
@@ -229,14 +222,6 @@ void CG_SetInitialSnapshot( snapshot_t *snap ) {
 		}
 	}
 	// OSP
-	/*
-#if __MACOS__
-#ifdef GAMERANGER
-	// LBO 12/13/04. Add support for GameRanger team voice IDs
-	GRSetMyTeamID(cg.snap->ps.persistant[PERS_TEAM]);
-#endif
-#endif
-	*/
 }
 
 
@@ -337,7 +322,7 @@ static void CG_TransitionSnapshot( void ) {
 		if ( cg.demoPlayback || ( cg.snap->ps.pm_flags & PMF_FOLLOW )
 			 || cg_nopredict.integer
 #ifdef ALLOW_GSYNC
-			 || cg_synchronousClients.integer
+			 || cgs.synchronousClients
 #endif // ALLOW_GSYNC
 			 ) {
 			CG_TransitionPlayerState( ps, ops );

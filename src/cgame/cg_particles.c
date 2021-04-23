@@ -849,9 +849,9 @@ void CG_AddParticles( void ) {
 	float alpha;
 	float time, time2;
 	vec3_t org;
-	int color;
+	//int color;
 	cparticle_t     *active, *tail;
-	int type;
+	//int type;
 	vec3_t rotate_ang;
 
 	if ( !initparticles ) {
@@ -951,7 +951,7 @@ void CG_AddParticles( void ) {
 			alpha = 1;
 		}
 
-		color = p->color;
+		//color = p->color;
 
 		time2 = time * time;
 
@@ -959,7 +959,7 @@ void CG_AddParticles( void ) {
 		org[1] = p->org[1] + p->vel[1] * time + p->accel[1] * time2;
 		org[2] = p->org[2] + p->vel[2] * time + p->accel[2] * time2;
 
-		type = p->type;
+		//type = p->type;
 
 		CG_AddParticleToScene( p, org, alpha );
 	}
@@ -1493,9 +1493,8 @@ void CG_AddParticleShrapnel( localEntity_t *le ) {
 // done.
 
 int CG_NewParticleArea( int num ) {
-	// const char *str;
-	char *str;
-	char *token;
+	const char *str;
+	const char *token;
 	int type;
 	vec3_t origin, origin2;
 	int i;
@@ -1504,7 +1503,7 @@ int CG_NewParticleArea( int num ) {
 	int numparticles;
 	int snum;
 
-	str = (char *) CG_ConfigString( num );
+	str = CG_ConfigString( num );
 	if ( !str[0] ) {
 		return ( 0 );
 	}

@@ -452,7 +452,7 @@ static ID_INLINE void LocalMatrixTransformVector( vec3_t in, vec3_t mat[ 3 ], ve
 	out[ 2 ] = in[ 0 ] * mat[ 2 ][ 0 ] + in[ 1 ] * mat[ 2 ][ 1 ] + in[ 2 ] * mat[ 2 ][ 2 ];
 }
 
-static ID_INLINE void LocalMatrixTransformVectorTranslate( vec3_t in, vec3_t mat[ 3 ], vec3_t _tr, vec3_t out ) {
+/*static ID_INLINE void LocalMatrixTransformVectorTranslate( vec3_t in, vec3_t mat[ 3 ], vec3_t _tr, vec3_t out ) {
 	out[ 0 ] = in[ 0 ] * mat[ 0 ][ 0 ] + in[ 1 ] * mat[ 0 ][ 1 ] + in[ 2 ] * mat[ 0 ][ 2 ] + _tr[ 0 ];
 	out[ 1 ] = in[ 0 ] * mat[ 1 ][ 0 ] + in[ 1 ] * mat[ 1 ][ 1 ] + in[ 2 ] * mat[ 1 ][ 2 ] + _tr[ 1 ];
 	out[ 2 ] = in[ 0 ] * mat[ 2 ][ 0 ] + in[ 1 ] * mat[ 2 ][ 1 ] + in[ 2 ] * mat[ 2 ][ 2 ] + _tr[ 2 ];
@@ -480,7 +480,7 @@ static ID_INLINE void LocalAddScaledMatrixTransformVectorFullTranslate( vec3_t i
 	out[ 0 ] += s * ( in[ 0 ] * mat[ 0 ][ 0 ] + in[ 1 ] * mat[ 0 ][ 1 ] + in[ 2 ] * mat[ 0 ][ 2 ] ) + _tr[ 0 ];
 	out[ 1 ] += s * ( in[ 0 ] * mat[ 1 ][ 0 ] + in[ 1 ] * mat[ 1 ][ 1 ] + in[ 2 ] * mat[ 1 ][ 2 ] ) + _tr[ 1 ];
 	out[ 2 ] += s * ( in[ 0 ] * mat[ 2 ][ 0 ] + in[ 1 ] * mat[ 2 ][ 1 ] + in[ 2 ] * mat[ 2 ][ 2 ] ) + _tr[ 2 ];
-}
+}*/
 
 static ID_INLINE void LocalAddScaledMatrixTransformVectorTranslate( vec3_t in, float s, vec3_t mat[ 3 ], vec3_t _tr, vec3_t out ) {
 	out[ 0 ] += s * ( in[ 0 ] * mat[ 0 ][ 0 ] + in[ 1 ] * mat[ 0 ][ 1 ] + in[ 2 ] * mat[ 0 ][ 2 ] + _tr[ 0 ] );
@@ -488,16 +488,19 @@ static ID_INLINE void LocalAddScaledMatrixTransformVectorTranslate( vec3_t in, f
 	out[ 2 ] += s * ( in[ 0 ] * mat[ 2 ][ 0 ] + in[ 1 ] * mat[ 2 ][ 1 ] + in[ 2 ] * mat[ 2 ][ 2 ] + _tr[ 2 ] );
 }
 
-static ID_INLINE void LocalAddScaledMatrixTransformVector( vec3_t in, float s, vec3_t mat[ 3 ], vec3_t out ) {
+/*static ID_INLINE void LocalAddScaledMatrixTransformVector( vec3_t in, float s, vec3_t mat[ 3 ], vec3_t out ) {
 	out[ 0 ] += s * ( in[ 0 ] * mat[ 0 ][ 0 ] + in[ 1 ] * mat[ 0 ][ 1 ] + in[ 2 ] * mat[ 0 ][ 2 ] );
 	out[ 1 ] += s * ( in[ 0 ] * mat[ 1 ][ 0 ] + in[ 1 ] * mat[ 1 ][ 1 ] + in[ 2 ] * mat[ 1 ][ 2 ] );
 	out[ 2 ] += s * ( in[ 0 ] * mat[ 2 ][ 0 ] + in[ 1 ] * mat[ 2 ][ 1 ] + in[ 2 ] * mat[ 2 ][ 2 ] );
-}
+}*/
 
+#ifndef YD_INGLES
 static float LAVangle;
+#endif
 static float sp, sy, cp, cy, sr, cr;
 //static float    sr, cr;// TTimo: unused
 
+#ifndef YD_INGLES
 static ID_INLINE void LocalAngleVector( vec3_t angles, vec3_t forward ) {
 	LAVangle = angles[YAW] * ( M_PI * 2 / 360 );
 	sy = sin( LAVangle );
@@ -515,6 +518,7 @@ static ID_INLINE void LocalVectorMA( vec3_t org, float dist, vec3_t vec, vec3_t 
 	out[1] = org[1] + dist * vec[1];
 	out[2] = org[2] + dist * vec[2];
 }
+#endif
 
 #define ANGLES_SHORT_TO_FLOAT( pf, sh )     { *( pf++ ) = SHORT2ANGLE( *( sh++ ) ); *( pf++ ) = SHORT2ANGLE( *( sh++ ) ); *( pf++ ) = SHORT2ANGLE( *( sh++ ) ); }
 
@@ -584,7 +588,7 @@ static void InglesToAxis( int ingles[ 3 ], vec3_t axis[ 3 ] ) {
 ===============================================================================
 */
 
-static ID_INLINE void Matrix4Multiply( const vec4_t a[4], const vec4_t b[4], vec4_t dst[4] ) {
+/*static ID_INLINE void Matrix4Multiply( const vec4_t a[4], const vec4_t b[4], vec4_t dst[4] ) {
 	dst[0][0] = a[0][0] * b[0][0] + a[0][1] * b[1][0] + a[0][2] * b[2][0] + a[0][3] * b[3][0];
 	dst[0][1] = a[0][0] * b[0][1] + a[0][1] * b[1][1] + a[0][2] * b[2][1] + a[0][3] * b[3][1];
 	dst[0][2] = a[0][0] * b[0][2] + a[0][1] * b[1][2] + a[0][2] * b[2][2] + a[0][3] * b[3][2];
@@ -604,7 +608,7 @@ static ID_INLINE void Matrix4Multiply( const vec4_t a[4], const vec4_t b[4], vec
 	dst[3][1] = a[3][0] * b[0][1] + a[3][1] * b[1][1] + a[3][2] * b[2][1] + a[3][3] * b[3][1];
 	dst[3][2] = a[3][0] * b[0][2] + a[3][1] * b[1][2] + a[3][2] * b[2][2] + a[3][3] * b[3][2];
 	dst[3][3] = a[3][0] * b[0][3] + a[3][1] * b[1][3] + a[3][2] * b[2][3] + a[3][3] * b[3][3];
-}
+}*/
 
 // TTimo: const usage would require an explicit cast, non ANSI C
 // see unix/const-arg.c
@@ -625,7 +629,7 @@ static ID_INLINE void Matrix4MultiplyInto3x3AndTranslation( /*const*/ vec4_t a[4
 	t[2]      = a[2][0] * b[0][3] + a[2][1] * b[1][3] + a[2][2] * b[2][3] + a[2][3] * b[3][3];
 }
 
-static ID_INLINE void Matrix4Transpose( const vec4_t matrix[4], vec4_t transpose[4] ) {
+/*static ID_INLINE void Matrix4Transpose( const vec4_t matrix[4], vec4_t transpose[4] ) {
 	int i, j;
 	for ( i = 0; i < 4; i++ ) {
 		for ( j = 0; j < 4; j++ ) {
@@ -677,7 +681,7 @@ static ID_INLINE void Matrix4FromTranslation( const vec3_t t, vec4_t dst[4] ) {
 		dst[3][i] = 0;
 	}
 	dst[3][3] = 1;
-}
+}*/
 
 // can put an axis rotation followed by a translation directly into one matrix
 // TTimo: const usage would require an explicit cast, non ANSI C
@@ -713,7 +717,7 @@ static ID_INLINE void Matrix4FromScaledAxisPlusTranslation( /*const*/ vec3_t axi
 	dst[3][3] = 1;
 }
 
-static ID_INLINE void Matrix4FromScale( const float scale, vec4_t dst[4] ) {
+/*static ID_INLINE void Matrix4FromScale( const float scale, vec4_t dst[4] ) {
 	int i, j;
 
 	for ( i = 0; i < 4; i++ ) {
@@ -732,7 +736,7 @@ static ID_INLINE void Matrix4TransformVector( const vec4_t m[4], const vec3_t sr
 	dst[0] = m[0][0] * src[0] + m[0][1] * src[1] + m[0][2] * src[2] + m[0][3];
 	dst[1] = m[1][0] * src[0] + m[1][1] * src[1] + m[1][2] * src[2] + m[1][3];
 	dst[2] = m[2][0] * src[0] + m[2][1] * src[1] + m[2][2] * src[2] + m[2][3];
-}
+}*/
 
 /*
 ===============================================================================

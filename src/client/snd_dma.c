@@ -45,7 +45,7 @@ id Software LLC, c/o ZeniMax Media Inc., Suite 120, Rockville, Maryland 20850 US
 #include "snd_codec.h"
 #include "client.h"
 
-static void S_Update_( void );
+static void S_Update_( int msec );
 void S_Base_StopAllSounds(void);
 void S_StopStreamingSound(int stream);
 void S_FreeStreamingSound(int stream);
@@ -102,11 +102,10 @@ static	sfx_t		*sfxHash[LOOP_HASH];
 cvar_t      *s_khz;
 cvar_t		*s_testsound;
 cvar_t		*s_show;
-cvar_t		*s_mixahead;
-cvar_t		*s_mixPreStep;
-cvar_t      *s_wavonly;
+static cvar_t *s_mixahead;
+static cvar_t *s_mixOffset;
 
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__) || defined(__APPLE_CC__)
 cvar_t		*s_device;
 #endif
 
@@ -848,13 +847,14 @@ static void S_Base_MainStartSoundEx( vec3_t origin, int entityNum, int entchanne
 				}
 				if (chosen == -1)
 				{
-					//Com_Printf("S_Base_MainStartSoundEx WARNING: dropping sound\n");
+					Com_DPrintf(S_COLOR_YELLOW "S_StartSound: No more channels free for %s\n", sfx->soundName);
 					return;
 				}
 			}
 		}
 		ch            = &s_channels[chosen];
 		ch->allocTime = sfx->lastTimeUsed;
+		Com_DPrintf(S_COLOR_YELLOW "S_StartSound: No more channels free for %s, dropping earliest sound: %s\n", sfx->soundName, ch->thesfx->soundName);
 	}
 
 	if (origin)
@@ -1399,7 +1399,7 @@ void S_Base_RawSamples( int stream, int samples, int rate, int width, int n_chan
 		}
 	}
 
-	if ( s_rawend[stream] < s_soundtime ) {
+	if ( s_rawend[stream] - s_soundtime < 0 ) {
 		Com_DPrintf( "S_Base_RawSamples: resetting minimum: %i < %i\n", s_rawend[stream], s_soundtime );
 		s_rawend[stream] = s_soundtime;
 	}
@@ -1479,7 +1479,7 @@ void S_Base_RawSamples( int stream, int samples, int rate, int width, int n_chan
 		}
 	}
 
-	if ( s_rawend[stream] > s_soundtime + MAX_RAW_SAMPLES ) {
+	if ( s_rawend[stream] - s_soundtime > MAX_RAW_SAMPLES ) {
 		Com_DPrintf( "S_Base_RawSamples: overflowed %i > %i\n", s_rawend[stream], s_soundtime );
 	}
 }
@@ -1566,7 +1566,7 @@ S_ScanChannelStarts
 Returns qtrue if any new sounds were started since the last mix
 ========================
 */
-qboolean S_ScanChannelStarts( void ) {
+static qboolean S_ScanChannelStarts( void ) {
 	channel_t		*ch;
 	int				i;
 	qboolean		newSamples;
@@ -1574,7 +1574,7 @@ qboolean S_ScanChannelStarts( void ) {
 	newSamples = qfalse;
 	ch = s_channels;
 
-	for (i=0; i<MAX_CHANNELS ; i++, ch++) {
+	for ( i = 0; i < MAX_CHANNELS; i++, ch++ ) {
 		if ( !ch->thesfx ) {
 			continue;
 		}
@@ -1588,8 +1588,8 @@ qboolean S_ScanChannelStarts( void ) {
 		}
 
 		// if it is completely finished by now, clear it
-		if ( ch->startSample + (ch->thesfx->soundLength) <= s_paintedtime ) {
-			S_ChannelFree(ch);
+		if ( ch->startSample + (ch->thesfx->soundLength) - s_soundtime <= 0 ) {
+			S_ChannelFree( ch );
 		}
 	}
 
@@ -1604,7 +1604,7 @@ S_Update
 Called once each time through the main loop
 ============
 */
-void S_Base_Update( void ) {
+static void S_Base_Update( int msec ) {
 	int			i;
 	int			total;
 	channel_t	*ch;
@@ -1630,11 +1630,8 @@ void S_Base_Update( void ) {
 		Com_Printf ("----(%i)---- painted: %i\n", total, s_paintedtime);
 	}
 
-	// add raw data from streamed samples
-	S_UpdateStreamingSounds();
-
 	// mix some sound
-	S_Update_();
+	S_Update_( msec );
 }
 
 
@@ -1647,7 +1644,7 @@ static void S_GetSoundtime( void )
 	float	frameDuration;
 	int		msec;
 
-	if( CL_VideoRecording( ) )
+	if ( CL_VideoRecording() )
 	{
 		fps = MIN( cl_aviFrameRate->value, 1000.0f );
 		frameDuration = MAX( dma.speed / fps, 1.0f ) + clc.aviSoundFrameRemainder;
@@ -1676,29 +1673,20 @@ static void S_GetSoundtime( void )
 
 	s_soundtime = buffers * dma.fullsamples + samplepos/dma.channels;
 
-#if 0
-// check to make sure that we haven't overshot
-	if (s_paintedtime < s_soundtime)
-	{
-		Com_DPrintf ("S_Update_ : overflow\n");
-		s_paintedtime = s_soundtime;
-	}
-#endif
-
 	if ( dma.submission_chunk < 256 ) {
-		s_paintedtime = s_soundtime + s_mixPreStep->value * dma.speed;
+		s_paintedtime = s_soundtime + s_mixOffset->value * dma.speed;
 	} else {
 		s_paintedtime = s_soundtime + dma.submission_chunk;
 	}
 }
 
 
-static void S_Update_( void ) {
+static void S_Update_( int msec ) {
 	unsigned		endtime;
-	static float	lastTime = 0.0f;
-	float			ma, op;
-	float			thisTime, sane;
-	static			int ot = -1;
+	int				mixAhead[2];
+	int				thisTime, sane;
+	static int		ot = -1;
+	static int		lastTime = 0;
 
 	if ( !s_soundStarted || s_soundMuted ) {
 		return;
@@ -1709,9 +1697,10 @@ static void S_Update_( void ) {
 	// Updates s_soundtime
 	S_GetSoundtime();
 
-	if (s_soundtime == ot) {
+	if ( s_soundtime == ot ) {
 		return;
 	}
+
 	ot = s_soundtime;
 
 	// clear any sound effects that end before the current time,
@@ -1719,27 +1708,31 @@ static void S_Update_( void ) {
 	S_ScanChannelStarts();
 
 	sane = thisTime - lastTime;
-	if (sane<11) {
-		sane = 11;			// 85hz
+	if ( sane < msec ) {
+		sane = msec;
 	}
 
-	ma = s_mixahead->value * dma.speed;
-	op = s_mixPreStep->value + sane*dma.speed*0.01;
+	mixAhead[0] = s_mixahead->value * (float)dma.speed;
+	mixAhead[1] = sane * 0.0015f * (float)dma.speed;
 
-	if (op < ma) {
-		ma = op;
+	if ( mixAhead[0] < mixAhead[1] ) {
+		mixAhead[0] = mixAhead[1];
 	}
 
 	// mix ahead of current position
-	endtime = s_soundtime + ma;
+	endtime = s_paintedtime + mixAhead[0];
 
 	// mix to an even submission block size
 	endtime = (endtime + dma.submission_chunk-1)
 		& ~(dma.submission_chunk-1);
 
 	// never mix more than the complete buffer
-	if (endtime - s_soundtime > dma.fullsamples)
+	if ( endtime - s_soundtime > dma.fullsamples ) {
 		endtime = s_soundtime + dma.fullsamples;
+	}
+
+	// add raw data from streamed samples
+	S_UpdateStreamingSounds();
 
 	// global volume fading
 
@@ -1775,7 +1768,6 @@ static void S_Update_( void ) {
 
 	lastTime = thisTime;
 }
-
 
 
 /*
@@ -2164,7 +2156,7 @@ void S_UpdateStreamingSounds(void)
 			continue;
 		}
 		// don't bother playing anything if musicvolume is 0
-		if (i == 0 && s_musicVolume->value <= 0.0f)
+		if (i == 0 && s_musicVolume->value == 0.0f)
 		{
 			continue;
 		}
@@ -2172,20 +2164,19 @@ void S_UpdateStreamingSounds(void)
 		j = RAW_STREAM(i);
 
 		// see how many samples should be copied into the raw buffer
-		if (s_rawend[j] < s_soundtime)
+		if (s_rawend[j] - s_soundtime < 0)
 		{
 			s_rawend[j] = s_soundtime;
 		}
 
-		while (s_rawend[j] < s_soundtime + MAX_RAW_SAMPLES)
+		while (s_rawend[j] - s_soundtime < MAX_RAW_SAMPLES)
 		{
 			bufferSamples = MAX_RAW_SAMPLES - (s_rawend[j] - s_soundtime);
 
 			// decide how much data needs to be read from the file
 			fileSamples = bufferSamples * ss->stream->info.rate / dma.speed;
 
-			if (!fileSamples)
-			{
+			if ( fileSamples == 0 ) {
 				break;
 			}
 
@@ -2278,7 +2269,7 @@ void S_UpdateStreamingSounds(void)
 				}
 
 				// loop
-				if (*ss->loopStream)
+				if ( ss->loopStream[0] != '\0' )
 				{
 					// TODO: Implement a rewind?
 					char loopStream[MAX_QPATH];
@@ -2420,8 +2411,12 @@ qboolean S_Base_Init( soundInterface_t *si ) {
 			break;
 	}
 
-	s_mixahead = Cvar_Get( "s_mixahead", "0.2", CVAR_ARCHIVE_ND );
-	s_mixPreStep = Cvar_Get( "s_mixPreStep", "0.05", CVAR_ARCHIVE_ND );
+	s_mixahead = Cvar_Get( "s_mixAhead", "0.2", CVAR_ARCHIVE_ND );
+	Cvar_CheckRange( s_mixahead, "0.001", "0.5", CV_FLOAT );
+
+	s_mixOffset = Cvar_Get( "s_mixOffset", "0", CVAR_ARCHIVE_ND | CVAR_DEVELOPER );
+	Cvar_CheckRange( s_mixOffset, "0", "0.5", CV_FLOAT );
+
 	s_show = Cvar_Get( "s_show", "0", CVAR_CHEAT );
 	s_testsound = Cvar_Get( "s_testsound", "0", CVAR_CHEAT );
 #if defined(__linux__) && !defined(USE_SDL)
@@ -2431,6 +2426,10 @@ qboolean S_Base_Init( soundInterface_t *si ) {
 		" Enter " S_COLOR_CYAN "aplay -L "S_COLOR_WHITE"in your shell to see all options.\n"
 		S_COLOR_YELLOW " Please note that only mono/stereo devices are acceptable." );
 #elif defined(__linux__) && defined(USE_SDL)
+	s_device = Cvar_Get( "s_device", "default", CVAR_ARCHIVE_ND | CVAR_LATCH );
+	Cvar_SetDescription( s_device, "Set SDL audio output device index\n"
+		"Use \"default\" to let system pick or choose one from \\s_devlist output." );
+#elif (defined(__APPLE__) || defined(__APPLE_CC__)) && defined(USE_SDL)
 	s_device = Cvar_Get( "s_device", "default", CVAR_ARCHIVE_ND | CVAR_LATCH );
 	Cvar_SetDescription( s_device, "Set SDL audio output device index\n"
 		"Use \"default\" to let system pick or choose one from \\s_devlist output." );

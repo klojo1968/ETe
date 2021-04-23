@@ -557,7 +557,6 @@ int Team_TouchEnemyFlag( gentity_t *ent, gentity_t *other, int team ) {
 			G_Script_ScriptEvent( level.gameManager, "trigger", "allied_object_stolen" );
 		}
 		G_Script_ScriptEvent( ent, "trigger", "stolen" );
-		Bot_TeamScriptEvent( TEAM_ALLIES, "objective", "stolen" );
 	} else {
 		gentity_t* pm = G_PopupMessage( PM_OBJECTIVE );
 		pm->s.effect3Time = G_StringIndex( ent->message );
@@ -572,7 +571,6 @@ int Team_TouchEnemyFlag( gentity_t *ent, gentity_t *other, int team ) {
 			G_Script_ScriptEvent( level.gameManager, "trigger", "axis_object_stolen" );
 		}
 		G_Script_ScriptEvent( ent, "trigger", "stolen" );
-		Bot_TeamScriptEvent( TEAM_AXIS, "objective", "stolen" );
 	}
 	// dhm
 // jpw
@@ -849,7 +847,6 @@ gentity_t *SelectCTFSpawnPoint( team_t team, int teamstate, vec3_t origin, vec3_
 
 /*---------------------------------------------------------------------------*/
 
-void GetBotAutonomies( int clientNum, int *weapAutonomy, int *moveAutonomy );
 /*
 ==================
 TeamplayLocationsMessage
@@ -869,7 +866,7 @@ void TeamplayInfoMessage( team_t team ) {
 	int cnt;
 	int h;
 	char*       bufferedData;
-	char*       tinfo;
+	const char*       tinfo;
 
 	// send the latest information on all clients
 	string[0] = 0;
@@ -1646,7 +1643,6 @@ int QDECL G_SortPlayersByXP( const void *a, const void *b ) {
 // Shuffle active players onto teams
 void G_shuffleTeams( void ) {
 	int i, cTeam; //, cMedian = level.numNonSpectatorClients / 2;
-	int aTeamCount[TEAM_NUM_TEAMS];
 	int cnt = 0;
 	int sortClients[MAX_CLIENTS];
 
@@ -1654,10 +1650,6 @@ void G_shuffleTeams( void ) {
 
 	G_teamReset( TEAM_AXIS, qtrue );
 	G_teamReset( TEAM_ALLIES, qtrue );
-
-	for ( i = 0; i < TEAM_NUM_TEAMS; i++ ) {
-		aTeamCount[i] = 0;
-	}
 
 	for ( i = 0; i < level.numConnectedClients; i++ ) {
 		cl = level.clients + level.sortedClients[ i ];

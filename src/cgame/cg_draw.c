@@ -203,7 +203,7 @@ void CG_Text_Paint( float x, float y, float scale, vec4_t color, const char *tex
 int CG_DrawFieldWidth( int x, int y, int width, int value, int charWidth, int charHeight ) {
 	char num[16], *ptr;
 	int l;
-	int frame;
+	//int frame;
 	int totalwidth = 0;
 
 	if ( width < 1 ) {
@@ -243,11 +243,11 @@ int CG_DrawFieldWidth( int x, int y, int width, int value, int charWidth, int ch
 	ptr = num;
 	while ( *ptr && l )
 	{
-		if ( *ptr == '-' ) {
+		/*if ( *ptr == '-' ) {
 			frame = STAT_MINUS;
 		} else {
 			frame = *ptr - '0';
-		}
+		}*/
 
 		totalwidth += charWidth;
 		ptr++;
@@ -436,7 +436,7 @@ CG_DrawSnapshot
 ==================
 */
 static float CG_DrawSnapshot( float y ) {
-	char        *s;
+	const char *s;
 	int w;
 
 	s = va( "time:%i snap:%i cmd:%i", cg.snap->serverTime,
@@ -455,7 +455,7 @@ CG_DrawFPS
 */
 #define FPS_FRAMES  4
 static float CG_DrawFPS( float y ) {
-	char        *s;
+	const char *s;
 	int w;
 	static int previousTimes[FPS_FRAMES];
 	static int index;
@@ -505,11 +505,10 @@ CG_DrawTimer
 */
 
 static float CG_DrawTimer( float y ) {
-	char        *s;
+	const char *s, *rt;
 	int w;
 	int mins, seconds, tens;
 	int msec;
-	char        *rt;
 	vec4_t color =             { 0.625f,   0.625f, 0.6f,   1.0f    };
 	vec4_t timerBackground =   { 0.16f,    0.2f,   0.17f,  0.8f    };
 	vec4_t timerBorder     =   { 0.5f,     0.5f,   0.5f,   0.5f    };
@@ -637,7 +636,7 @@ CG_DrawTeamInfo
 =================
 */
 static void CG_DrawTeamInfo( void ) {
-	int w, h;
+	int w;
 	int i, len;
 	vec4_t hcolor;
 	int chatHeight;
@@ -660,8 +659,6 @@ static void CG_DrawTeamInfo( void ) {
 		if ( cg.time - cgs.teamChatMsgTimes[cgs.teamLastChatPos % chatHeight] > cg_teamChatTime.integer ) {
 			cgs.teamLastChatPos++;
 		}
-
-		h = ( cgs.teamChatPos - cgs.teamLastChatPos ) * lineHeight;
 
 		w = 0;
 
@@ -739,7 +736,7 @@ CG_DrawNotify
 #define NOTIFYLOC_Y_SP 128
 
 static void CG_DrawNotify( void ) {
-	int w, h;
+	int w;
 	int i, len;
 	vec4_t hcolor;
 	int chatHeight;
@@ -765,8 +762,6 @@ static void CG_DrawNotify( void ) {
 		if ( cg.time - cgs.notifyMsgTimes[cgs.notifyLastPos % chatHeight] > notifytime ) {
 			cgs.notifyLastPos++;
 		}
-
-		h = ( cgs.notifyPos - cgs.notifyLastPos ) * TINYCHAR_HEIGHT;
 
 		w = 0;
 
@@ -1022,7 +1017,7 @@ static void CG_DrawLagometer( void ) {
 
 	if ( cg_nopredict.integer
 #ifdef ALLOW_GSYNC
-		 || cg_synchronousClients.integer
+		 || cgs.synchronousClients
 #endif // ALLOW_GSYNC
 		 ) {
 		CG_DrawBigString( ax, ay, "snc", 1.0 );
@@ -1326,7 +1321,7 @@ static void CG_DrawMortarReticle( void ) {
 	vec4_t color_firerequest = { 1.f, 1.f, 1.f, 1.f };
 	float offset, localOffset;
 	int i, min, majorOffset, val, printval, fadeTime;
-	char    *s;
+	const char    *s;
 	float angle, angleMin, angleMax;
 	qboolean hasRightTarget, hasLeftTarget;
 
@@ -2222,7 +2217,7 @@ CG_DrawVote
 =================
 */
 static void CG_DrawVote( void ) {
-	char    *s;
+	const char    *s;
 	char str1[32], str2[32];
 	float color[4] = { 1, 1, 0, 1 };
 	int sec;
@@ -2566,7 +2561,7 @@ CG_DrawSpectatorMessage
 */
 static void CG_DrawSpectatorMessage( void ) {
 	const char *str, *str2;
-	float x, y;
+	float /*x, */y;
 	static int lastconfigGet = 0;
 
 	if ( !cg_descriptiveText.integer ) {
@@ -2583,7 +2578,7 @@ static void CG_DrawSpectatorMessage( void ) {
 		lastconfigGet = cg.time;
 	}
 
-	x = ( cg.snap->ps.pm_flags & PMF_LIMBO ) ? 170 : 80;
+	//x = ( cg.snap->ps.pm_flags & PMF_LIMBO ) ? 170 : 80;
 	y = 408;
 
 	y -= 2 * TINYCHAR_HEIGHT;
@@ -2711,12 +2706,12 @@ static qboolean CG_DrawFollow( void ) {
 
 					deployTime *= 0.001f;
 
-					sprintf( deploytime, CG_TranslateString( "Bonus Life! Deploying in %d seconds" ), CG_CalculateReinfTime( qfalse ) + cg.snap->ps.persistant[PERS_RESPAWNS_PENALTY] * deployTime );
+					Com_sprintf( deploytime, sizeof(deploytime), CG_TranslateString( "Bonus Life! Deploying in %d seconds" ), CG_CalculateReinfTime( qfalse ) + cg.snap->ps.persistant[PERS_RESPAWNS_PENALTY] * deployTime );
 				} else {
-					sprintf( deploytime, CG_TranslateString( "No more deployments this round" ) );
+					Com_sprintf( deploytime, sizeof(deploytime), "%s", CG_TranslateString( "No more deployments this round" ) );
 				}
 			} else {
-				sprintf( deploytime, CG_TranslateString( "Deploying in %d seconds" ), CG_CalculateReinfTime( qfalse ) );
+				Com_sprintf( deploytime, sizeof(deploytime), CG_TranslateString( "Deploying in %d seconds" ), CG_CalculateReinfTime( qfalse ) );
 			}
 
 			CG_DrawStringExt( INFOTEXT_STARTX, 118, deploytime, colorWhite, qtrue, qtrue, SMALLCHAR_WIDTH, SMALLCHAR_HEIGHT, 80 );
@@ -2944,7 +2939,7 @@ static void CG_DrawFlashFade( void ) {
 		// OSP - Show who is speclocked
 		if ( fBlackout ) {
 			int i, nOffset = 90;
-			char *str, *format = "The %s team is speclocked!";
+			const char *str, *format = "The %s team is speclocked!";
 			char *teams[TEAM_NUM_TEAMS] = { "??", "AXIS", "ALLIES", "???" };
 			float color[4] = { 1, 1, 0, 1 };
 
@@ -3171,7 +3166,7 @@ void CG_ObjectivePrint( const char *str, int charWidth ) {
 static void CG_DrawObjectiveInfo( void ) {
 	char    *start;
 	int l;
-	int x, y, w,h;
+	int x, y, w;//,h;
 	int x1, y1, x2, y2;
 	float   *color;
 	vec4_t backColor;
@@ -3242,7 +3237,7 @@ static void CG_DrawObjectiveInfo( void ) {
 	x2 = x2 + 4;
 	y2 = y - cg.oidPrintCharWidth * 1.5 + 4;
 
-	h = y2 - y1; // JPW NERVE
+	//h = y2 - y1; // JPW NERVE
 
 	VectorCopy( color, backColor );
 	backColor[3] = 0.5 * color[3];
@@ -3462,7 +3457,7 @@ void CG_DrawCompassIcon( float x, float y, float w, float h, vec3_t origin, vec3
 	x = x + ( cos( angle ) * w );
 	y = y + ( sin( angle ) * w );
 
-	len = 1 - min( 1.f, len / 2000.f );
+	len = 1 - MIN( 1.f, len / 2000.f );
 
 
 	CG_DrawPic( x - ( 14 * len + 4 ) / 2, y - ( 14 * len + 4 ) / 2, 14 * len + 8, 14 * len + 8, shader );
@@ -3504,7 +3499,7 @@ void CG_DrawCompassIcon( float x, float y, float w, float h, vec3_t origin, vec3
 
 	}
 
-	len = 1 - min( 1.f, len / 2000.f );
+	len = 1 - MIN( 1.f, len / 2000.f );
 	iconWidth = 14 * len + 4;     // where did this calc. come from?
 	iconHeight = 14 * len + 4;
 
@@ -3925,7 +3920,7 @@ static void CG_DrawStaminaBar( rectDef_t *rect ) {
 
 static void CG_DrawWeapRecharge( rectDef_t *rect ) {
 	float barFrac, chargeTime;
-	int weap, flags;
+	int /*weap, */flags;
 	qboolean fade = qfalse;
 
 	vec4_t bgcolor = { 1.0f, 1.0f, 1.0f, 0.25f };
@@ -3933,7 +3928,7 @@ static void CG_DrawWeapRecharge( rectDef_t *rect ) {
 
 	flags = 1 | 4 | 16;
 
-	weap = cg.snap->ps.weapon;
+	//weap = cg.snap->ps.weapon;
 
 //	if( !(cg.snap->ps.eFlags & EF_ZOOMING) ) {
 //		if ( weap != WP_PANZERFAUST && weap != WP_DYNAMITE && weap != WP_MEDKIT && weap != WP_SMOKE_GRENADE && weap != WP_PLIERS && weap != WP_AMMO ) {
@@ -3978,12 +3973,12 @@ static void CG_DrawWeapRecharge( rectDef_t *rect ) {
 static void CG_DrawPlayerStatus( void ) {
 	int value, value2, value3;
 	char buffer[32];
-	int weap;
-	playerState_t   *ps;
+	//int weap;
+	//playerState_t   *ps;
 	rectDef_t rect;
 //	vec4_t			colorFaded = { 1.f, 1.f, 1.f, 0.3f };
 
-	ps = &cg.snap->ps;
+	//ps = &cg.snap->ps;
 
 	// Draw weapon icon and overheat bar
 	rect.x = 640 - 82;
@@ -3999,7 +3994,7 @@ static void CG_DrawPlayerStatus( void ) {
 	}
 
 	// Draw ammo
-	weap = CG_PlayerAmmoValue( &value, &value2, &value3 );
+	/*weap = */(void)CG_PlayerAmmoValue( &value, &value2, &value3 );
 	if ( value3 >= 0 ) {
 		Com_sprintf( buffer, sizeof( buffer ), "%i|%i/%i", value3, value, value2 );
 		CG_Text_Paint_Ext( 640 - 22 - CG_Text_Width_Ext( buffer, .25f, 0, &cgs.media.limboFont1 ), 480 - 1 * ( 16 + 2 ) + 12 - 4, .25f, .25f, colorWhite, buffer, 0, 0, ITEM_TEXTSTYLE_SHADOWED, &cgs.media.limboFont1 );
@@ -4244,7 +4239,7 @@ void CG_DrawDemoRecording( void ) {
 	char demostatus[128];
 	char wavestatus[128];
 
-	if ( !cl_demorecording.integer && !cl_waverecording.integer ) {
+	if ( !cg_demorecording.integer && !cg_waverecording.integer ) {
 		return;
 	}
 
@@ -4252,14 +4247,14 @@ void CG_DrawDemoRecording( void ) {
 		return;
 	}
 
-	if ( cl_demorecording.integer ) {
-		Com_sprintf( demostatus, sizeof( demostatus ), " demo %s: %ik ", cl_demofilename.string, cl_demooffset.integer / 1024 );
+	if ( cg_demorecording.integer ) {
+		Com_sprintf( demostatus, sizeof( demostatus ), " demo %s: %ik ", cg_demofilename.string, cg_demooffset.integer / 1024 );
 	} else {
 		strncpy( demostatus, "", sizeof( demostatus ) );
 	}
 
-	if ( cl_waverecording.integer ) {
-		Com_sprintf( wavestatus, sizeof( demostatus ), " audio %s: %ik ", cl_wavefilename.string, cl_waveoffset.integer / 1024 );
+	if ( cg_waverecording.integer ) {
+		Com_sprintf( wavestatus, sizeof( demostatus ), " audio %s: %ik ", cg_wavefilename.string, cg_waveoffset.integer / 1024 );
 	} else {
 		strncpy( wavestatus, "", sizeof( wavestatus ) );
 	}

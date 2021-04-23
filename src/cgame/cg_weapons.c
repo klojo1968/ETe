@@ -909,11 +909,11 @@ CG_ParseWeaponConfig
 ======================
 */
 static qboolean CG_ParseWeaponConfig( const char *filename, weaponInfo_t *wi ) {
-	char        *text_p, *prev;
+	const char        *text_p, *prev;
 	int len;
 	int i;
 	float fps;
-	char        *token;
+	const char        *token;
 	qboolean newfmt = qfalse;       //----(SA)
 	char text[20000];
 	fileHandle_t f;
@@ -1932,7 +1932,7 @@ static void CG_CalculateWeaponPosition( vec3_t origin, vec3_t angles ) {
 		VectorMA( origin, angles[ROLL], right, origin );
 
 		// pitch the gun down a bit to show that firing is not allowed when leaning
-		angles[PITCH] += ( abs( cg.predictedPlayerState.leanf ) / 2.0f );
+		angles[PITCH] += ( fabs( cg.predictedPlayerState.leanf ) / 2.0f );
 
 		// this gives you some impression that the weapon stays in relatively the same
 		// position while you lean, so you appear to 'peek' over the weapon
@@ -2800,6 +2800,9 @@ void CG_AddViewWeapon( playerState_t *ps ) {
 
 			if ( cg.time - cg.predictedPlayerEntity.muzzleFlashTime < MUZZLE_FLASH_TIME ) {
 				trap_R_AddRefEntityToScene( &flash );
+
+				// ydnar: add dynamic light
+				trap_R_AddLightToScene( flash.origin, 320, 1.25 + ( rand() & 31 ) / 128, 1.0, 0.6, 0.23, 0, 0 );
 			}
 		}
 		return;
@@ -4271,7 +4274,7 @@ The current weapon has just run out of ammo
 */
 void CG_OutOfAmmoChange( qboolean allowforceswitch ) {
 	int i;
-	int bank, cycle;
+	int bank = 0, cycle = 0;
 	int equiv = WP_NONE;
 
 	//
@@ -4665,6 +4668,11 @@ void CG_FireWeapon( centity_t *cent ) {
 		return;
 	}
 	weap = &cg_weapons[ ent->weapon ];
+
+	if ( ent->number >= 0 && ent->number < MAX_CLIENTS && cent != &cg.predictedPlayerEntity ) {
+		// point from external event to client entity
+		cent = &cg_entities[ ent->number ];
+	}
 
 	if ( cent->currentState.clientNum == cg.snap->ps.clientNum ) {
 		cg.lastFiredWeapon = ent->weapon;   //----(SA)	added

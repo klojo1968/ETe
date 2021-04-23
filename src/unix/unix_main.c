@@ -803,21 +803,19 @@ qboolean CopyDLLForMod( char **p_fn, const char* gamedir, const char *pwdpath, c
 }
 
 // TTimo - Wolf MP specific, adding .mp. to shared objects
-const char* Sys_GetDLLName( const char *name ) {
-#if defined __i386__
-	return va( "%s.mp.i386.so", name );
-#elif defined __x86_64__
-	return va( "%s.mp.x86_64.so", name );
-#elif defined __ppc__
-	return va( "%s.mp.ppc.so", name );
-#elif defined __axp__
-	return va( "%s.mp.axp.so", name );
-#elif defined __mips__
-	return va( "%s.mp.mips.so", name );
-#else
-#error Unknown arch
-#endif
+#ifdef __APPLE__
+const char *Sys_GetDLLName( const char *name ) {
+	#if arm64
+		return va( "%s_%s_mac.%s", name, ARCH_STRING, REN_DLL_EXT );
+	#else
+		return va( "%s_mac", name );
+	#endif
 }
+#else
+const char *Sys_GetDLLName( const char *name ) {
+	return va( "%s.mp." ARCH_STRING DLL_EXT, name );
+}
+#endif
 
 void *Sys_LoadDll( const char *name, dllSyscall_t *entryPoint, dllSyscall_t systemcalls )
 {
@@ -1127,7 +1125,7 @@ void Sys_PrintBinVersion( const char* name )
 chmod OR on a file
 ==================
 */
-void Sys_Chmod( char *file, int mode ) {
+void Sys_Chmod( const char *file, int mode ) {
 	struct stat s_buf;
 	int perm;
 	if ( stat( file, &s_buf ) != 0 ) {

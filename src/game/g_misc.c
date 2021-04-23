@@ -37,7 +37,6 @@ If you have questions concerning this license or the applicable additional terms
 #include "g_local.h"
 
 extern void AimAtTarget( gentity_t * self );
-extern float AngleDifference( float ang1, float ang2 );
 
 /*QUAKED func_group (0 0 0) ?
 Used to group brushes together just for editor convenience.  They are turned into normal brushes by the utilities.
@@ -827,11 +826,6 @@ void Use_Shooter( gentity_t *ent, gentity_t *other, gentity_t *activator ) {
 		SnapVector( ent->s.pos.trDelta );           // save net bandwidth
 		break;
 
-/*	case WP_SPEARGUN:
-	case WP_SPEARGUN_CO2:
-		fire_speargun(ent, ent->s.origin, dir);
-		break;*/
-
 	case WP_MAPMORTAR:
 		AimAtTarget( ent );   // store in ent->s.origin2 the direction/force needed to pass through the target
 		VectorScale( dir, VectorLength( ent->s.origin2 ), dir );
@@ -1108,8 +1102,8 @@ void SP_dlight( gentity_t *ent ) {
 
 	if ( ent->dl_stylestring && strlen( ent->dl_stylestring ) ) {    // if they're specified in a string, use em
 	} else if ( style )       {
-		style = max( 1, style );                                  // clamp to predefined range
-		style = min( 19, style );
+		style = MAX( 1, style );                                  // clamp to predefined range
+		style = MIN( 19, style );
 		ent->dl_stylestring = predef_lightstyles[style - 1];    // these are input as 1-20
 	} else {
 		ent->dl_stylestring = "mmmaaa";                          // default to a strobe to call attention to this not being set
@@ -1399,7 +1393,6 @@ void aagun_think( gentity_t *self ) {
 
 	if ( owner->client ) {
 		vec3_t dang;
-		int i;
 
 		VectorSubtract( self->r.currentOrigin, owner->r.currentOrigin, vec );
 
@@ -2470,7 +2463,7 @@ void SP_misc_constructiblemarker( gentity_t *ent ) {
 		char cs[MAX_INFO_STRING];
 
 		trap_GetConfigstring( CS_CONSTRUCTION_NAMES, cs, sizeof( cs ) );
-		Info_SetValueForKey( cs, va( "%i",ent - g_entities ), s );
+		Info_SetValueForKey( cs, va( "%i",(int)(ent - g_entities) ), s );
 		trap_SetConfigstring( CS_CONSTRUCTION_NAMES, cs );
 	}
 
@@ -2552,9 +2545,6 @@ void landmine_setup( gentity_t *ent ) {
 	ent->nextthink      = level.time + FRAMETIME;
 	ent->think          = G_LandmineThink;
 
-	// RF, record the time for AI
-	ent->awaitingHelpTime = level.time;
-
 	ent->damage         = 0;
 
 	if ( ent->s.teamNum == TEAM_AXIS ) { // store team so we can generate red or blue smoke
@@ -2631,4 +2621,166 @@ void G_TempTraceIgnorePlayersAndBodies( void ) {
 	for ( i = 0; i < BODY_QUEUE_SIZE; i++ ) {
 		G_TempTraceIgnoreEntity( level.bodyQue[ i ] );
 	}
+}
+
+// Gordon: adding some support functions
+// returns qtrue if a construction is under way on this ent, even before it hits any stages
+qboolean G_ConstructionBegun( gentity_t* ent ) {
+	if ( G_ConstructionIsPartlyBuilt( ent ) ) {
+		return qtrue;
+	}
+
+	if ( ent->s.angles2[0] ) {
+		return qtrue;
+	}
+
+	return qfalse;
+}
+
+// returns qtrue if all stage are built
+qboolean G_ConstructionIsFullyBuilt( gentity_t* ent ) {
+	if ( ent->s.angles2[1] != 1 ) {
+		return qfalse;
+	}
+	return qtrue;
+}
+
+// returns qtrue if 1 stage or more is built
+qboolean G_ConstructionIsPartlyBuilt( gentity_t* ent ) {
+	if ( G_ConstructionIsFullyBuilt( ent ) ) {
+		return qtrue;
+	}
+
+	if ( ent->count2 ) {
+		if ( !ent->grenadeFired ) {
+			return qfalse;
+		} else {
+			return qtrue;
+		}
+	}
+
+	return qfalse;
+}
+
+qboolean G_ConstructionIsDestroyable( gentity_t* ent ) {
+	if ( !G_ConstructionIsPartlyBuilt( ent ) ) {
+		return qfalse;
+	}
+
+	if ( ent->s.angles2[0] ) {
+		return qfalse;
+	}
+
+	return qtrue;
+}
+
+// returns the constructible for this team that is attached to this toi
+gentity_t* G_ConstructionForTeam( gentity_t* toi, team_t team ) {
+	gentity_t* targ = toi->target_ent;
+	if ( !targ || targ->s.eType != ET_CONSTRUCTIBLE ) {
+		return NULL;
+	}
+
+	if ( targ->spawnflags & 4 ) {
+		if ( team == TEAM_ALLIES ) {
+			return targ->chain;
+		}
+	} else if ( targ->spawnflags & 8 ) {
+		if ( team == TEAM_AXIS ) {
+			return targ->chain;
+		}
+	}
+
+	return targ;
+}
+
+gentity_t* G_IsConstructible( team_t team, gentity_t* toi ) {
+	gentity_t* ent;
+
+	if ( !toi || toi->s.eType != ET_OID_TRIGGER ) {
+		return NULL;
+	}
+
+	if ( !( ent = G_ConstructionForTeam( toi, team ) ) ) {
+		return NULL;
+	}
+
+	if ( G_ConstructionIsFullyBuilt( ent ) ) {
+		return NULL;
+	}
+
+	if ( ent->chain && G_ConstructionBegun( ent->chain ) ) {
+		return NULL;
+	}
+
+	return ent;
+}
+
+/*
+==============
+AngleDifference
+==============
+*/
+float AngleDifference( float ang1, float ang2 ) {
+	float diff;
+
+	diff = ang1 - ang2;
+	if ( ang1 > ang2 ) {
+		if ( diff > 180.0 ) {
+			diff -= 360.0;
+		}
+	} else {
+		if ( diff < -180.0 ) {
+			diff += 360.0;
+		}
+	}
+	return diff;
+}
+
+/*
+==================
+ClientName
+==================
+*/
+char *ClientName( int client, char *name, int size ) {
+	char buf[MAX_INFO_STRING];
+
+	if ( client < 0 || client >= MAX_CLIENTS ) {
+		G_Printf( "ClientName: client out of range\n" );
+		return "[client out of range]";
+	}
+	trap_GetConfigstring( CS_PLAYERS + client, buf, sizeof( buf ) );
+	strncpy( name, Info_ValueForKey( buf, "n" ), size - 1 );
+	name[size - 1] = '\0';
+	Q_CleanStr( name );
+	return name;
+}
+
+
+/*
+==================
+FindClientByName
+==================
+*/
+int FindClientByName( const char *name ) {
+	int i, j;
+	char buf[MAX_INFO_STRING];
+
+	for ( j = 0; j < level.numConnectedClients; j++ ) {
+		i = level.sortedClients[j];
+		ClientName( i, buf, sizeof( buf ) );
+		if ( !Q_stricmp( buf, name ) ) {
+			return i;
+		}
+	}
+
+	for ( j = 0; j < level.numConnectedClients; j++ ) {
+		i = level.sortedClients[j];
+		ClientName( i, buf, sizeof( buf ) );
+		if ( Q_stristr( buf, name ) ) {
+			return i;
+		}
+	}
+
+	return -1;
 }

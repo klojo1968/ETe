@@ -32,8 +32,8 @@ If you have questions concerning this license or the applicable additional terms
 #include <sys/types.h>
 #include "../qcommon/cm_public.h"
 
-//Ignore __attribute__ on non-gcc platforms
-#ifndef __GNUC__
+//Ignore __attribute__ on non-gcc/clang platforms
+#if !defined(__GNUC__) && !defined(__clang__)
 #ifndef __attribute__
 #define __attribute__(x)
 #endif
@@ -41,7 +41,7 @@ If you have questions concerning this license or the applicable additional terms
 
 /* C99 defines __func__ */
 #if __STDC_VERSION__ < 199901L 
-#if __GNUC__ >= 2 || _MSC_VER >= 1300 
+#if __GNUC__ >= 2 || _MSC_VER >= 1300 || defined(__clang__)
 #define __func__ __FUNCTION__ 
 #else 
 #define __func__ "(unknown)" 
@@ -87,7 +87,7 @@ void MSG_Uncompressed( msg_t *buf );
 // copy a msg_t in case we need to store it as is for a bit
 // (as I needed this to keep an msg_t from a static var for later use)
 // sets data buffer as MSG_Init does prior to do the copy
-void MSG_Copy(msg_t *buf, byte *data, int length, msg_t *src);
+void MSG_Copy(msg_t *buf, byte *data, int length, const msg_t *src);
 
 struct usercmd_s;
 struct entityState_s;
@@ -200,7 +200,7 @@ typedef struct {
 		byte	_6[16];
 #endif
 	} ipv;
-	unsigned short	port;
+	uint16_t	port;
 #ifdef USE_IPV6
 	unsigned long	scope_id;	// Needed for IPv6 link-local addresses
 #endif
@@ -623,10 +623,11 @@ const char *Cvar_VariableString( const char *var_name );
 void	Cvar_VariableStringBuffer( const char *var_name, char *buffer, int bufsize );
 void	Cvar_VariableStringBufferSafe( const char *var_name, char *buffer, int bufsize, int flag );
 // returns an empty string if not defined
+const char *Cvar_LatchedVariableString( const char *var_name );
 void    Cvar_LatchedVariableStringBuffer( const char *var_name, char *buffer, int bufsize );
 // Gordon: returns the latched value if there is one, else the normal one, empty string if not defined as usual
 
-int		Cvar_Flags(const char *var_name);
+unsigned Cvar_Flags( const char *var_name );
 // returns CVAR_NONEXISTENT if cvar doesn't exist or the flags of that particular CVAR.
 
 void	Cvar_CommandCompletion( void(*callback)(const char *s) );
@@ -994,6 +995,9 @@ MISC
 ==============================================================
 */
 
+// customizable client window title
+extern char cl_title[ MAX_CVAR_VALUE_STRING ];
+
 extern	int	CPU_Flags;
 
 // x86 flags
@@ -1249,7 +1253,7 @@ void CL_ClearStaticDownload( void );
 qboolean CL_Disconnect( qboolean showMainMenu );
 void CL_ResetOldGame( void );
 void CL_Shutdown( const char *finalmsg, qboolean quit );
-void CL_Frame( int msec );
+void CL_Frame( int msec, int realMsec );
 qboolean CL_GameCommand( void );
 qboolean CL_CgameRunning( void );
 void CL_KeyEvent (int key, qboolean down, unsigned time);
@@ -1426,7 +1430,6 @@ qboolean Sys_ResetReadOnlyAttribute( const char *ospath );
 const char *Sys_Pwd( void );
 const char *Sys_DefaultBasePath( void );
 const char *Sys_DefaultHomePath( void );
-const char *Sys_SteamPath( void );
 
 char **Sys_ListFiles( const char *directory, const char *extension, const char *filter, int *numfiles, qboolean wantsubs );
 void Sys_FreeFileList( char **list );
@@ -1458,10 +1461,10 @@ void Sys_OpenURL( const char *url, qboolean doexit );                       // N
 int Sys_GetHighQualityCPU();
 float Sys_GetCPUSpeed( void );
 
-#ifdef __linux__
+#ifndef _WIN32
 // TTimo only on linux .. maybe on Mac too?
 // will OR with the existing mode (chmod ..+..)
-void Sys_Chmod( char *file, int mode );
+void Sys_Chmod( const char *file, int mode );
 #endif
 
 // adaptive huffman functions
@@ -1517,7 +1520,7 @@ void Com_GetHunkInfo( int* hunkused, int* hunkexpected );
 // ui.mp.i386.so
 #define SYS_DLLNAME_UI "ui.mp." ARCH_STRING DLL_EXT
 
-#elif __MACOS__
+#elif defined(__APPLE__) || defined(__APPLE_CC__)
 
 #ifdef _DEBUG
 // qagame_d_mac

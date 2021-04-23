@@ -184,10 +184,10 @@ static void SV_Map_f( void ) {
 		return;
 	}
 
-	if ( g_gameType->latchedString )
-		sv_cachedGametype = atoi(g_gameType->latchedString);
+	if ( sv_gameType->latchedString )
+		sv_cachedGametype = atoi(sv_gameType->latchedString);
 	else
-		sv_cachedGametype = g_gameType->integer;
+		sv_cachedGametype = sv_gameType->integer;
 
 	Cvar_Set( "gamestate", va( "%i", GS_INITIALIZE ) );       // NERVE - SMF - reset gamestate on map/devmap
 
@@ -1063,6 +1063,11 @@ void SV_TempBanNetAddress( const netadr_t *address, int length ) {
 	int oldesttime = 0;
 	int oldest = -1;
 
+	// local and bots cannot be banned
+	if ( address->type <= NA_LOOPBACK ) {
+		return;
+	}
+
 	for ( i = 0; i < MAX_TEMPBAN_ADDRESSES; i++ ) {
 		if ( !svs.tempBanAddresses[ i ].endtime || svs.tempBanAddresses[ i ].endtime < svs.time ) {
 			// found a free slot
@@ -1084,6 +1089,11 @@ void SV_TempBanNetAddress( const netadr_t *address, int length ) {
 
 qboolean SV_TempBanIsBanned( const netadr_t *address ) {
 	int i;
+
+	// local and bots cannot be banned
+	if ( address->type <= NA_LOOPBACK ) {
+		return qfalse;
+	}
 
 	for ( i = 0; i < MAX_TEMPBAN_ADDRESSES; i++ ) {
 		if ( svs.tempBanAddresses[ i ].endtime && svs.tempBanAddresses[ i ].endtime > svs.time ) {
