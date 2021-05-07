@@ -2342,14 +2342,16 @@ void CL_NextDownload( void )
 			}
 			else {
 				if(*clc.sv_dlURL) {
-					CL_cURL_BeginDownload(localName, va("%s/%s",
-						clc.sv_dlURL, remoteName));
+					CL_cURL_BeginDownload(localName, va("%s/%s", clc.sv_dlURL, remoteName));
+					useCURL = qtrue;
+				}
+				else if(*cl_dlURL->string) {
+					CL_cURL_BeginDownload(localName, va("%s/%s", cl_dlURL->string, remoteName));
+					useCURL = qtrue;
 				}
 				else {
-					CL_cURL_BeginDownload(localName, va("%s/%s",
-						cl_dlURL->string, remoteName));
+					Com_Printf("WARNING: client download redirection enabled, but no cl_dlURL fallback set\n");
 				}
-				useCURL = qtrue;
 			}
 		}
 		else if(!(clc.sv_allowDownload & DLF_NO_REDIRECT)) {
@@ -3372,10 +3374,7 @@ void CL_Frame( int msec, int realMsec ) {
 	float fps;
 	float frameDuration;
 
-#ifndef USE_SDL
-	if ( Cvar_CheckGroup( CVG_LANGUAGE ) )
-		CL_TrackCvarChanges();
-#endif
+	CL_TrackCvarChanges( qfalse );
 
 #ifdef USE_CURL
 	if ( download.cURL ) {
@@ -4660,9 +4659,11 @@ void CL_Init( void ) {
 #ifndef USE_SDL
 	Cvar_SetGroup( cl_language, CVG_LANGUAGE );
 	Cvar_SetGroup( in_forceCharset, CVG_LANGUAGE );
-
-	CL_TrackCvarChanges();
 #endif
+	Cvar_SetGroup( cl_allowDownload, CVG_CLDOWNLOAD );
+	Cvar_SetGroup( cl_wwwDownload, CVG_CLDOWNLOAD );
+
+	CL_TrackCvarChanges( qtrue );
 
 	Com_Printf( "----- Client Initialization Complete -----\n" );
 }
@@ -6302,17 +6303,36 @@ const char* CL_TranslateStringBuf( const char *string ) {
 }
 
 
+void CL_TrackCvarChanges( qboolean force ) {
 #ifndef USE_SDL
-void CL_TrackCvarChanges( void ) {
-	if ( cl_language->integer > 0 && in_forceCharset->integer > 0 ) {
-		Com_Printf( "WARNING: in_forceCharset incompatible with non-English languages!\n"
-					"Setting in_forceCharset to 0.\n");
-		Cvar_Set( "in_forceCharset", "0" );
-	}
+	if ( force || Cvar_CheckGroup( CVG_LANGUAGE ) ) {
+		if ( cl_language->integer > 0 && in_forceCharset->integer > 0 ) {
+			Com_Printf( "WARNING: in_forceCharset incompatible with non-English languages!\n"
+						"Setting in_forceCharset to 0.\n");
+			Cvar_Set( "in_forceCharset", "0" );
+		}
 
-	Cvar_ResetGroup( CVG_LANGUAGE, qfalse );
-}
+		Cvar_ResetGroup( CVG_LANGUAGE, qfalse );
+	}
 #endif
+	if ( force || Cvar_CheckGroup( CVG_CLDOWNLOAD ) ) {
+		if ( cl_wwwDownload->integer != 0 && (cl_allowDownload->integer & DLF_NO_UDP) ) {
+			int newValue = (cl_allowDownload->integer & ~DLF_NO_UDP);
+			Com_Printf( S_COLOR_YELLOW "WARNING: cl_wwwDownload 1 requires cl_allowDownload without %d\n"
+						"Setting cl_allowDownload to %d\n", DLF_NO_UDP, newValue );
+			Cvar_SetIntegerValue( "cl_allowDownload", newValue );
+		}
+
+		if ( cl_wwwDownload->integer != 0 && !(cl_allowDownload->integer & DLF_NO_REDIRECT) ) {
+			int newValue = (cl_allowDownload->integer | DLF_NO_REDIRECT);
+			Com_Printf( S_COLOR_YELLOW "WARNING: cl_allowDownload %d is not compatible with cl_wwwDownload 1\n"
+						"Setting cl_allowDownload to %d\n", cl_allowDownload->integer, newValue );
+			Cvar_SetIntegerValue( "cl_allowDownload", newValue );
+		}
+
+		Cvar_ResetGroup( CVG_CLDOWNLOAD, qfalse );
+	}
+}
 
 /*
 =======================

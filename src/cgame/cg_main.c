@@ -46,10 +46,14 @@ extern qboolean g_waitingForKey;
 
 qboolean intShaderTime = qfalse;
 qboolean linearLight = qfalse;
+qboolean removeAllDefines = qfalse;
+qboolean getClipboardData = qfalse;
 
 int dll_com_trapGetValue;
 int dll_trap_R_AddRefEntityToScene2;
 int dll_trap_R_AddLinearLightToScene;
+int dll_trap_PC_RemoveAllGlobalDefines;
+int dll_trap_GetClipboardData;
 
 /*
 ================
@@ -81,9 +85,9 @@ Q_EXPORT intptr_t vmMain( int command, intptr_t arg0, intptr_t arg1, intptr_t ar
 		CG_KeyEvent( arg0, arg1 );
 		return 0;
 	case CG_MOUSE_EVENT:
+		CG_MouseEvent( arg0, arg1 );
 		cgDC.cursorx = cgs.cursorX;
 		cgDC.cursory = cgs.cursorY;
-		CG_MouseEvent( arg0, arg1 );
 		return 0;
 	case CG_EVENT_HANDLING:
 		CG_EventHandling( arg0, qtrue );
@@ -2696,6 +2700,14 @@ void CG_Init( int serverMessageNum, int serverCommandSequence, int clientNum, qb
 			dll_trap_R_AddLinearLightToScene = atoi( value );
 			linearLight = qtrue;
 		}
+		if ( trap_GetValue( value, sizeof( value ), "trap_PC_RemoveAllGlobalDefines_ETE" ) ) {
+			dll_trap_PC_RemoveAllGlobalDefines = atoi( value );
+			removeAllDefines = qtrue;
+		}
+		if ( trap_GetValue( value, sizeof( value ), "trap_GetClipboardData_ETE" ) ) {
+			dll_trap_GetClipboardData = atoi( value );
+			getClipboardData = qtrue;
+		}
 	}
 
 	// load a few needed things before we do any screen updates
@@ -2709,6 +2721,8 @@ void CG_Init( int serverMessageNum, int serverCommandSequence, int clientNum, qb
 	cgs.media.charsetPropB      = trap_R_RegisterShaderNoMip( "menu/art/font2_prop.tga" );
 
 	CG_RegisterCvars();
+	if( removeAllDefines )
+		trap_PC_RemoveAllGlobalDefines();
 
 	CG_InitConsoleCommands();
 

@@ -340,7 +340,7 @@ int trap_BotLibDefine( char *string ) {
 	return syscall( BOTLIB_PC_ADD_GLOBAL_DEFINE, string );
 }
 
-int trap_PC_AddGlobalDefine( char *define ) {
+int trap_PC_AddGlobalDefine( const char *define ) {
 	return syscall( BOTLIB_PC_ADD_GLOBAL_DEFINE, define );
 }
 

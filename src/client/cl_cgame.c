@@ -60,6 +60,27 @@ static void CL_GetGlconfig( glconfig_t *glconfig ) {
 
 /*
 ====================
+CL_GetClipboardData
+====================
+*/
+static void CL_GetClipboardData( char *buf, int buflen ) {
+	char	*cbd;
+
+	cbd = Sys_GetClipboardData();
+
+	if ( !cbd ) {
+		*buf = '\0';
+		return;
+	}
+
+	Q_strncpyz( buf, cbd, buflen );
+
+	Z_Free( cbd );
+}
+
+
+/*
+====================
 CL_GetUserCmd
 ====================
 */
@@ -583,6 +604,16 @@ static qboolean CL_GetValue( char* value, int valueSize, const char* key ) {
 		return qtrue;
 	}
 
+	if ( !Q_stricmp( key, "trap_PC_RemoveAllGlobalDefines_ETE" ) ) {
+		Com_sprintf( value, valueSize, "%i", CG_PC_REMOVE_ALL_GLOBAL_DEFINES );
+		return qtrue;
+	}
+
+	if ( !Q_stricmp( key, "trap_GetClipboardData_ETE" ) ) {
+		Com_sprintf( value, valueSize, "%i", CG_GETCLIPBOARDDATA );
+		return qtrue;
+	}
+
 	return qfalse;
 }
 
@@ -1086,6 +1117,14 @@ static intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 
 	case CG_R_FORCEFIXEDDLIGHTS:
 		CL_ForceFixedDlights();
+		return 0;
+
+	case CG_PC_REMOVE_ALL_GLOBAL_DEFINES:
+		botlib_export->PC_RemoveAllGlobalDefines();
+		return 0;
+
+	case CG_GETCLIPBOARDDATA:
+		CL_GetClipboardData( VMA(1), args[2] );
 		return 0;
 
 	case CG_TRAP_GETVALUE:

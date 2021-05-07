@@ -1350,7 +1350,6 @@ static int DL_cb_Progress( void *clientp, double dltotal, double dlnow, double u
 	clc.downloadCount = (int)dlnow;
 	Cvar_SetIntegerValue( "cl_downloadCount", clc.downloadCount );
 
-
 	//Cvar_SetValue( "cl_downloadCount", (float)dlnow );
 	return 0;
 }

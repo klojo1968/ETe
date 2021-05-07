@@ -617,7 +617,7 @@ int trap_Key_GetKey( const char *binding ) {
 }
 
 
-int trap_PC_AddGlobalDefine( char *define ) {
+int trap_PC_AddGlobalDefine( const char *define ) {
 	return syscall( CG_PC_ADD_GLOBAL_DEFINE, define );
 }
 
@@ -897,4 +897,12 @@ void trap_R_AddRefEntityToScene2( const refEntity_t *re ) {
 
 void trap_R_AddLinearLightToScene( const vec3_t start, const vec3_t end, float intensity, float r, float g, float b ) {
 	syscall( dll_trap_R_AddLinearLightToScene, start, end, intensity, r, g, b );
+}
+
+void trap_PC_RemoveAllGlobalDefines( void ) {
+	syscall( dll_trap_PC_RemoveAllGlobalDefines );
+}
+
+void trap_GetClipboardData( char *buf, int len ) {
+	syscall( dll_trap_GetClipboardData, buf, len );
 }

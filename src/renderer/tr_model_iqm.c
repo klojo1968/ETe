@@ -195,11 +195,13 @@ qboolean R_LoadIQM( model_t *mod, void *buffer, int filesize, const char *mod_na
 	} blendWeights;
 
 	if( filesize < sizeof(iqmHeader_t) ) {
+		ri.Printf( PRINT_WARNING, "%s: truncated header for %s\n", __func__, mod_name );
 		return qfalse;
 	}
 
 	header = (iqmHeader_t *)buffer;
 	if( Q_strncmp( header->magic, IQM_MAGIC, sizeof(header->magic) ) ) {
+		ri.Printf( PRINT_WARNING, "%s: unknown fileid for %s\n", __func__, mod_name );
 		return qfalse;
 	}
 
@@ -1169,6 +1171,11 @@ void R_AddIQMSurfaces( trRefEntity_t *ent ) {
 			&& fogNum == 0
 			&& (ent->e.renderfx & RF_SHADOW_PLANE )
 			&& shader->sort == SS_OPAQUE ) {
+			R_AddDrawSurf( (void *)surface, tr.projectionShadowShader, 0, 0 );
+		}
+
+		// for testing polygon shadows (on /all/ models)
+		if ( r_shadows->integer == 4 ) {
 			R_AddDrawSurf( (void *)surface, tr.projectionShadowShader, 0, 0 );
 		}
 

@@ -3510,10 +3510,16 @@ void CG_Fireteams_MenuTitleText_Draw( panel_button_t* button );
 // extension interface
 extern  qboolean intShaderTime;
 extern  qboolean linearLight;
+extern	qboolean removeAllDefines;
+extern	qboolean getClipboardData;
 
 qboolean trap_GetValue( char *value, int valueSize, const char *key );
 void trap_R_AddRefEntityToScene2( const refEntity_t *re );
 void trap_R_AddLinearLightToScene( const vec3_t start, const vec3_t end, float intensity, float r, float g, float b );
+void trap_PC_RemoveAllGlobalDefines( void );
+void trap_GetClipboardData( char *buf, int len );
 extern int dll_com_trapGetValue;
 extern int dll_trap_R_AddRefEntityToScene2;
 extern int dll_trap_R_AddLinearLightToScene;
+extern int dll_trap_PC_RemoveAllGlobalDefines;
+extern int dll_trap_GetClipboardData;

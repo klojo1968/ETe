@@ -1155,6 +1155,7 @@ typedef enum {
 	CVG_CLIENT,
 	CVG_SERVER,
 	CVG_LANGUAGE,
+	CVG_CLDOWNLOAD,
 	CVG_MAX,
 } cvarGroup_t;
 

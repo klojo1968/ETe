@@ -553,8 +553,8 @@ void        Controls_GetConfig( void );
 void        Controls_SetConfig( qboolean restart );
 void        Controls_SetDefaults( qboolean lefthanded );
 
-int         trap_PC_AddGlobalDefine( char *define );
-int         trap_PC_RemoveAllGlobalDefines( void );
+int         trap_PC_AddGlobalDefine( const char *define );
+void        trap_PC_RemoveAllGlobalDefines( void );
 int         trap_PC_LoadSource( const char *filename );
 int         trap_PC_FreeSource( int handle );
 int         trap_PC_ReadToken( int handle, pc_token_t *pc_token );

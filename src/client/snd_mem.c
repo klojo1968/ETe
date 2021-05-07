@@ -46,6 +46,7 @@ static	sndBuffer	*buffer = NULL;
 static	sndBuffer	*freelist = NULL;
 static	int inUse = 0;
 static	int totalInUse = 0;
+static	int totalSizeBuffer = 0;
 
 short *sfxScratchBuffer = NULL;
 sfx_t *sfxScratchPointer = NULL;
@@ -87,8 +88,9 @@ void SND_setup( void )
 	cv = Cvar_Get( "com_soundMegs", DEF_COMSOUNDMEGS, CVAR_LATCH | CVAR_ARCHIVE );
 	Cvar_CheckRange( cv, "1", "512", CV_INTEGER );
 
-	scs = ( cv->integer * /*1536*/ 12 * dma.speed ) / 22050;
-	scs *= 128;
+	scs = ( cv->integer * 512 ); // reduce memory waste by reverting to ET value here, below is about 3x as much memory
+	//scs = ( cv->integer * /*1536*/ 12 * dma.speed ) / 22050;
+	//scs *= 128;
 
 	sz = scs * sizeof( sndBuffer );
 
@@ -111,6 +113,8 @@ void SND_setup( void )
 	} else {
 		Com_Memset( buffer, 0, sz );
 	}
+
+	totalSizeBuffer = sz;
 
 	sz = SND_CHUNK_SIZE * sizeof(short) * 4;
 
@@ -332,5 +336,10 @@ qboolean S_LoadSound( sfx_t *sfx )
 }
 
 void S_DisplayFreeMemory(void) {
-	Com_Printf("%d bytes free sound buffer memory, %d total used\n", inUse, totalInUse);
+	cvar_t *cv = Cvar_Get( "com_soundMegs", DEF_COMSOUNDMEGS, CVAR_LATCH | CVAR_ARCHIVE );
+	Com_Printf( "%6.2f MB requested sound buffer size\n", cv->value );
+	Com_Printf( "%9i bytes (%6.2f MB) total sound buffer\n", totalSizeBuffer, totalSizeBuffer / Square( 1024.f ) );
+	Com_Printf( "%9i bytes (%6.2f MB) in sound buffer\n", totalInUse, totalInUse / Square( 1024.f ) );
+	Com_Printf( "%9i bytes (%6.2f MB) unused sound buffer\n", inUse, inUse / Square( 1024.f ) );
+	//Com_Printf("%d bytes free sound buffer memory, %d total used\n", inUse, totalInUse);
 }

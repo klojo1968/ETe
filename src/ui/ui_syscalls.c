@@ -407,12 +407,12 @@ void trap_SetCDKey( char *buf ) {
 	syscall( UI_SET_CDKEY, buf );
 }
 
-int trap_PC_AddGlobalDefine( char *define ) {
+int trap_PC_AddGlobalDefine( const char *define ) {
 	return syscall( UI_PC_ADD_GLOBAL_DEFINE, define );
 }
 
-int trap_PC_RemoveAllGlobalDefines( void ) {
-	return syscall( UI_PC_REMOVE_ALL_GLOBAL_DEFINES );
+void trap_PC_RemoveAllGlobalDefines( void ) {
+	syscall( UI_PC_REMOVE_ALL_GLOBAL_DEFINES );
 }
 
 int trap_PC_LoadSource( const char *filename ) {
